@@ -1,222 +1,226 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{% block title %}Learning Assistance Portal{% endblock %}</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>
+      {% block title %}
+        Learning Assistance Portal
+      {% endblock %}
+    </title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link id="theme-style" rel="stylesheet" href="{% static 'css/dark-theme.css' %}">
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link id="theme-style" rel="stylesheet" href="{% static 'css/dark-theme.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
 
-  <style>
-    * {
-      transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
-    }
-
-    html, body {
-      height: 100%;
-      margin: 0;
-      scroll-behavior: smooth;
-    }
-
-    body {
-      font-family: 'Urbanist', 'Inter', sans-serif;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      padding-top: 70px;
-    }
-
-    .page-wrapper {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    main {
-      flex: 1;
-    }
-
-    footer {
-      text-align: center;
-      padding: 1.5rem 0;
-      font-size: 0.9rem;
-      margin-top: auto;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      background-color: #1a4a8c;
-      color: #fff;
-    }
-
-    .card {
-      border-radius: 12px;
-      background-color: transparent !important;
-      border: 1px solid rgba(255, 255, 255, 0.25) !important;
-      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-    }
-
-    .hover-shadow:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 10px rgba(0, 150, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    body.light-theme .hover-shadow:hover {
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(0, 150, 255, 0.1);
-    }
-
-    .btn-outline-light {
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #fff;
-      transition: background-color 0.25s ease, box-shadow 0.25s ease;
-    }
-
-    .btn-outline-light:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.5);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
-    }
-  </style>
-</head>
-
-<body>
-  <div class="page-wrapper">
-    <nav class="navbar navbar-expand-lg custom-navbar shadow-sm">
-      <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
-          <img src="{% static 'images/login-logo.jpeg' %}" alt="LAP Logo" class="me-2" style="height:40px;">
-          <span class="fw-bold text-white">LAP</span>
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-center">
-
-            {% if user.is_authenticated and user.profile.is_moderator %}
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                  <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'instructors' %}active{% endif %}" href="{% url 'instructors' %}">
-                  <i class="bi bi-people me-1"></i> Instructors
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'moderator_stats' %}active{% endif %}" href="{% url 'moderator_stats' %}">
-                  <i class="bi bi-graph-up me-1"></i> Stats
-                </a>
-              </li>
-              <li class="nav-item">
-                <form method="post" action="{% url 'logout' %}" class="d-inline">
-                  {% csrf_token %}
-                  <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">Logout</a>
-                </form>
-              </li>
-
-            {% elif user.is_authenticated and user.profile.is_instructor %}
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'manage_enrollments' %}active{% endif %}" href="{% url 'manage_enrollments' %}">Students</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'global_announcement_list' %}active{% endif %}" href="{% url 'global_announcement_list' %}">Announcements</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}" href="{% url 'course_list' %}">Courses</a>
-              </li>
-              <li class="nav-item">
-                <form method="post" action="{% url 'logout' %}" class="d-inline">
-                  {% csrf_token %}
-                  <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">Logout</a>
-                </form>
-              </li>
-
-            {% elif user.is_authenticated %}
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'global_announcement_list' %}active{% endif %}" href="{% url 'global_announcement_list' %}">Announcements</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}" href="{% url 'course_list' %}">Courses</a>
-              </li>
-              <li class="nav-item">
-                <form method="post" action="{% url 'logout' %}" class="d-inline">
-                  {% csrf_token %}
-                  <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">Logout</a>
-                </form>
-              </li>
-
-            {% else %}
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}">Login</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}" href="{% url 'register' %}">Register</a>
-              </li>
-            {% endif %}
-
-            <li class="nav-item ms-3">
-              <div class="theme-switch" id="theme-toggle">
-                <div class="switch-circle"></div>
-                <div class="icon sun">☀️</div>
-                <div class="icon moon">🌙</div>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-
-    <main class="container mt-4">
-      {% block content %}{% endblock %}
-    </main>
-
-    <footer>
-      <p>&copy; {{ current_year|default:"2025" }} LAP — All rights reserved.</p>
-    </footer>
-  </div>
-
-  <script>
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeLink = document.getElementById('theme-style');
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme, false);
-    if (savedTheme === 'light') themeToggle.classList.add('active');
-
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = themeLink.getAttribute('href').includes('dark') ? 'light' : 'dark';
-      themeToggle.classList.toggle('active');
-      setTheme(currentTheme, true);
-    });
-
-    function setTheme(theme, animate = true) {
-      document.body.classList.add('theme-transition');
-      themeLink.setAttribute('href', `{% static 'css/' %}${theme}-theme.css`);
-      localStorage.setItem('theme', theme);
-      setTimeout(() => document.body.classList.remove('theme-transition'), 800);
-    }
-
-    let lastScroll = 0;
-    const navbar = document.querySelector('.navbar');
-    window.addEventListener('scroll', () => {
-      const currentScroll = window.pageYOffset;
-      if (currentScroll <= 0) {
-        navbar.style.top = '0';
-        return;
+    <style>
+      * {
+        transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
       }
-      navbar.style.top = currentScroll > lastScroll ? '-80px' : '0';
-      lastScroll = currentScroll;
-    });
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+      
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        scroll-behavior: smooth;
+      }
+      
+      body {
+        font-family: 'Urbanist', 'Inter', sans-serif;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding-top: 70px;
+      }
+      
+      .page-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      
+      main {
+        flex: 1;
+      }
+      
+      footer {
+        text-align: center;
+        padding: 1.5rem 0;
+        font-size: 0.9rem;
+        margin-top: auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: #1a4a8c;
+        color: #fff;
+      }
+      
+      .card {
+        border-radius: 12px;
+        background-color: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      }
+      
+      .hover-shadow:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 10px rgba(0, 150, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+      
+      body.light-theme .hover-shadow:hover {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(0, 150, 255, 0.1);
+      }
+      
+      .btn-outline-light {
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #fff;
+        transition: background-color 0.25s ease, box-shadow 0.25s ease;
+      }
+      
+      .btn-outline-light:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page-wrapper">
+      <nav class="navbar navbar-expand-lg custom-navbar shadow-sm">
+        <div class="container">
+          <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+            <img src="{% static 'images/login-logo.jpeg' %}" alt="LAP Logo" class="me-2" style="height:40px;" />
+            <span class="fw-bold text-white">LAP</span>
+          </a>
+
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+              {% if user.is_authenticated and user.profile.is_moderator %}
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'instructors' %}active{% endif %}" href="{% url 'instructors' %}"><i class="bi bi-people me-1"></i> Instructors</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'moderator_stats' %}active{% endif %}" href="{% url 'moderator_stats' %}"><i class="bi bi-graph-up me-1"></i> Stats</a>
+                </li>
+                <li class="nav-item">
+                  <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">Logout</a>
+                  </form>
+                </li>
+              {% elif user.is_authenticated and user.profile.is_instructor %}
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'manage_enrollments' %}active{% endif %}" href="{% url 'manage_enrollments' %}">Students</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'global_announcement_list' %}active{% endif %}" href="{% url 'global_announcement_list' %}">Announcements</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'instructor_latest_submissions' %}active{% endif %}" href="{% url 'instructor_latest_submissions' %}">Submissions</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}" href="{% url 'course_list' %}">Courses</a>
+                </li>
+                <li class="nav-item">
+                  <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">Logout</a>
+                  </form>
+                </li>
+              {% elif user.is_authenticated %}
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'global_announcement_list' %}active{% endif %}" href="{% url 'global_announcement_list' %}">Announcements</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}" href="{% url 'course_list' %}">Courses</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link 
+     {% if request.resolver_match.url_name == 'student_assignments' %}
+       active
+     {% endif %}" href="{% url 'student_assignments' %}">Assignments</a>
+                </li>
+                <li class="nav-item">
+                  <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">Logout</a>
+                  </form>
+                </li>
+              {% else %}
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}">Login</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}" href="{% url 'register' %}">Register</a>
+                </li>
+              {% endif %}
+
+              <li class="nav-item ms-3">
+                <div class="theme-switch" id="theme-toggle">
+                  <div class="switch-circle"></div>
+                  <div class="icon sun">☀️</div>
+                  <div class="icon moon">🌙</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <main class="container mt-4">
+        {% block content %}
+
+        {% endblock %}
+      </main>
+
+      <footer>
+        <p>&copy; {{ current_year|default:'2025' }} LAP — All rights reserved.</p>
+      </footer>
+    </div>
+
+    <script>
+      const themeToggle = document.getElementById('theme-toggle')
+      const themeLink = document.getElementById('theme-style')
+      const savedTheme = localStorage.getItem('theme') || 'dark'
+      setTheme(savedTheme, false)
+      if (savedTheme === 'light') themeToggle.classList.add('active')
+      
+      themeToggle.addEventListener('click', () => {
+        const currentTheme = themeLink.getAttribute('href').includes('dark') ? 'light' : 'dark'
+        themeToggle.classList.toggle('active')
+        setTheme(currentTheme, true)
+      })
+      
+      function setTheme(theme, animate = true) {
+        document.body.classList.add('theme-transition')
+        themeLink.setAttribute('href', `{% static 'css/' %}${theme}-theme.css`)
+        localStorage.setItem('theme', theme)
+        setTimeout(() => document.body.classList.remove('theme-transition'), 800)
+      }
+      
+      let lastScroll = 0
+      const navbar = document.querySelector('.navbar')
+      window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset
+        if (currentScroll <= 0) {
+          navbar.style.top = '0'
+          return
+        }
+        navbar.style.top = currentScroll > lastScroll ? '-80px' : '0'
+        lastScroll = currentScroll
+      })
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>

@@ -87,8 +87,16 @@
                 <td>{{ enrollment.student.email }}</td>
                 <td>{{ enrollment.course.title }}</td>
                 <td>
-                  <a href="{% url 'remove_enrollment' enrollment.id %}" class="btn btn-danger btn-sm px-3">Remove</a>
-                </td>
+  <a href="{% url 'student_detail' enrollment.student.id %}" 
+     class="btn btn-outline-primary btn-sm px-3 me-2">
+     View
+  </a>
+  <a href="{% url 'remove_enrollment' enrollment.id %}" 
+     class="btn btn-danger btn-sm px-3">
+     Remove
+  </a>
+</td>
+
               </tr>
               {% endfor %}
             </tbody>

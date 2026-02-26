@@ -114,7 +114,13 @@ def course_list(request):
     sort_by = request.GET.get('sort', 'popular')
     category_id = request.GET.get('category')
 
-    courses = Course.objects.annotate(num_students=Count('enrollment')).all()
+    # 🔥 Show different courses based on role
+    if request.user.is_authenticated and request.user.profile.is_instructor:
+        courses = Course.objects.filter(created_by=request.user)
+    else:
+        courses = Course.objects.all()
+
+    courses = courses.annotate(num_students=Count('enrollment'))
 
     if category_id:
         courses = courses.filter(category_id=category_id)
@@ -146,20 +152,36 @@ def course_list(request):
 def course_detail(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     lessons = course.lessons.all()
+
+    enrollment = None
     enrolled = False
     submissions = {}
     assignment_due_dates = {}
-    
+
     if request.user.is_authenticated:
-        enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
-        
+        enrollment = Enrollment.objects.filter(
+            student=request.user,
+            course=course,
+            is_approved=True
+        ).first()
+
+        enrolled = enrollment is not None
+
         for assignment in course.assignments.all():
-            submission = Submission.objects.filter(assignment=assignment, student=request.user).first()
+            submission = None
+
+            if enrollment:
+                submission = Submission.objects.filter(
+                    assignment=assignment,
+                    enrollment=enrollment
+                ).first()
+
+                assignment_due_dates[assignment.id] = (
+                    enrollment.get_assignment_due_date(assignment)
+                )
+
             submissions[assignment.id] = submission
-            
-            if enrolled:
-                assignment_due_dates[assignment.id] = assignment.get_due_date_for_student(request.user)
-    
+
     return render(request, 'courses/course_detail.html', {
         'course': course,
         'lessons': lessons,
@@ -167,6 +189,7 @@ def course_detail(request, course_id):
         'submissions': submissions,
         'assignment_due_dates': assignment_due_dates,
     })
+
 
 
 
@@ -249,27 +272,46 @@ def remove_enrollment(request, enrollment_id):
 
 
 from django.db.models import Q
-@login_required 
+@login_required
 def dashboard(request):
     user = request.user
     latest_announcement = Announcement.objects.order_by('-created_at').first()
 
+    # ===============================
+    # MODERATOR DASHBOARD
+    # ===============================
     if hasattr(user, "profile") and user.profile.is_moderator:
-        context = {
+        return render(request, 'auth/dashboard.html', {
             'is_moderator': True,
-            'pending_instructors_count': Profile.objects.filter(is_instructor=True, is_approved=False).count(),
-            'total_instructors': Profile.objects.filter(is_instructor=True).count(),
+            'pending_instructors_count': Profile.objects.filter(
+                is_instructor=True,
+                is_approved=False
+            ).count(),
+            'total_instructors': Profile.objects.filter(
+                is_instructor=True
+            ).count(),
             'latest_announcement': latest_announcement,
-        }
-        return render(request, 'auth/dashboard.html', context)
+        })
 
+    # ===============================
+    # INSTRUCTOR (NOT APPROVED)
+    # ===============================
     if user.profile.is_instructor and not user.profile.is_approved:
         return render(request, 'auth/pending_approval.html')
 
+    # ===============================
+    # INSTRUCTOR DASHBOARD
+    # ===============================
     if user.profile.is_instructor:
         courses = Course.objects.filter(created_by=user)
-        enrollments = Enrollment.objects.filter(course__in=courses).select_related('student')
+
+        enrollments = Enrollment.objects.filter(
+            course__in=courses,
+            is_approved=True
+        ).select_related('student')
+
         students = list({enrollment.student for enrollment in enrollments})
+
         return render(request, 'auth/dashboard.html', {
             'is_instructor': True,
             'courses': courses,
@@ -277,29 +319,31 @@ def dashboard(request):
             'latest_announcement': latest_announcement,
         })
 
-    enrollments = user.enrollments.select_related('course').distinct()
+    # ===============================
+    # STUDENT DASHBOARD
+    # ===============================
+    enrollments = user.enrollments.select_related('course').filter(
+        is_approved=True
+    )
 
+    # Progress now uses model property (no manual math needed)
     for enrollment in enrollments:
-        total_lessons = enrollment.course.lessons.count()
-        completed_lessons = enrollment.completed_lessons.count()
-        enrollment.progress = int((completed_lessons / total_lessons) * 100) if total_lessons else 0
+        enrollment.progress = enrollment.progress_percentage
 
     enrolled_course_ids = enrollments.values_list('course', flat=True)
-    now = timezone.now()
-    all_assignments = Assignment.objects.filter(course__in=enrolled_course_ids)
-    print(f"Total assignments in enrolled courses: {all_assignments.count()}")
-    print(f"Current time: {now}")
-    
 
+    # Pending assignments = assignments not yet submitted
     pending_assignments = Assignment.objects.filter(
         course__in=enrolled_course_ids
     ).exclude(
-        submissions__student=user
+        submissions__enrollment__student=user
     ).distinct()
+
     pending_count = pending_assignments.count()
-    print(f"Pending assignments count: {pending_count}")
+
     remaining_classes = sum(
-        enrollment.course.lessons.count() - enrollment.completed_lessons.count()
+        enrollment.course.lessons.count() -
+        enrollment.completed_lessons.count()
         for enrollment in enrollments
     )
 
@@ -311,6 +355,7 @@ def dashboard(request):
         'remaining_classes': remaining_classes,
         'latest_announcement': latest_announcement,
     })
+
 
 
 
@@ -428,20 +473,65 @@ def assignment_list(request, course_id):
     })
 
 
+@login_required
 def submit_assignment(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
+
+    enrollment = Enrollment.objects.filter(
+        student=request.user,
+        course=assignment.course,
+        is_approved=True
+    ).first()
+
+    if not enrollment:
+        return HttpResponseForbidden("You are not enrolled in this course.")
+
+    existing_submission = Submission.objects.filter(
+        assignment=assignment,
+        enrollment=enrollment
+    ).first()
+
+    if existing_submission:
+        if existing_submission.status == "approved":
+            messages.warning(request, "This assignment has already been approved. Resubmission not allowed.")
+            return redirect('student_assignments')
+
+        if existing_submission.status == "submitted":
+            messages.info(request, "Your submission is under review.")
+            return redirect('student_assignments')
+
+        if existing_submission.status == "rejected":
+            if request.method == 'POST':
+                form = SubmissionForm(request.POST, request.FILES)
+                if form.is_valid():
+                    existing_submission.submitted_file = form.cleaned_data['submitted_file']
+                    existing_submission.submitted_at = timezone.now()
+                    existing_submission.status = "submitted"
+                    existing_submission.marks = None
+                    existing_submission.feedback = None
+                    existing_submission.save()
+
+                    messages.success(request, "Assignment resubmitted successfully!")
+                    return redirect('student_assignments')
+            else:
+                form = SubmissionForm()
+
+            return render(request, 'assignments/submit_assignment.html', {
+                'form': form,
+                'assignment': assignment,
+                'resubmitting': True
+            })
 
     if request.method == 'POST':
         form = SubmissionForm(request.POST, request.FILES)
         if form.is_valid():
             submission = form.save(commit=False)
             submission.assignment = assignment
-            submission.student = request.user
+            submission.enrollment = enrollment
             submission.save()
-            messages.success(request, "✅ Assignment submitted successfully!")
-            return redirect('course_detail', course_id=assignment.course.id)
-        else:
-            messages.error(request, "❌ Submission failed. Please check the form and try again.")
+
+            messages.success(request, "Assignment submitted successfully!")
+            return redirect('student_assignments')
     else:
         form = SubmissionForm()
 
@@ -456,7 +546,10 @@ def view_submissions(request, assignment_id):
     if not request.user.profile.is_instructor or assignment.created_by != request.user:
         return HttpResponseForbidden("Only the instructor can view submissions.")
     
-    submissions = assignment.submissions.all()
+    submissions = assignment.submissions.select_related(
+    "enrollment__student"
+)
+
     return render(request, 'assignments/view_submissions.html', {
         'assignment': assignment,
         'submissions': submissions
@@ -464,55 +557,57 @@ def view_submissions(request, assignment_id):
 
 @login_required
 def student_assignments(request):
-    from django.utils import timezone
-    
     if request.user.profile.is_instructor:
         return HttpResponseForbidden("Instructors cannot access student assignments.")
 
-    # Get enrolled courses with enrollment dates
-    enrollments = Enrollment.objects.filter(student=request.user).select_related('course')
-    enrolled_course_ids = [e.course.id for e in enrollments]
-    
-    # Create a mapping of course_id to enrollment date
-    enrollment_dates = {e.course.id: e.enrolled_at for e in enrollments}
-    
-    # Get all assignments from enrolled courses
-    assignments = Assignment.objects.filter(course__in=enrolled_course_ids).select_related('course', 'created_by')
-    
-    # Get submitted assignment IDs
-    submitted_ids = Submission.objects.filter(student=request.user).values_list('assignment_id', flat=True)
-    
-    # Prepare assignment data with calculated due dates
+    enrollments = Enrollment.objects.filter(
+        student=request.user,
+        is_approved=True
+    ).select_related('course')
+
+    enrollment_map = {e.course.id: e for e in enrollments}
+
+    assignments = Assignment.objects.filter(
+        course__in=enrollment_map.keys()
+    ).select_related('course')
+
+    submissions = Submission.objects.filter(
+        enrollment__student=request.user
+    ).select_related('assignment')
+
+    submission_map = {s.assignment.id: s for s in submissions}
+
     pending_list = []
-    submitted_list = []
-    
+    reviewed_list = []
+    rejected_list = []
+
     for assignment in assignments:
-        # Calculate due date for this student
-        enrollment_date = enrollment_dates.get(assignment.course.id)
+        enrollment = enrollment_map.get(assignment.course.id)
+
         due_date = None
-        if enrollment_date:
-            due_date = enrollment_date + timezone.timedelta(days=assignment.relative_due_days)
-        
+        if enrollment:
+            due_date = enrollment.get_assignment_due_date(assignment)
+
+        submission = submission_map.get(assignment.id)
+
         assignment_info = {
             'assignment': assignment,
             'due_date': due_date,
+            'submission': submission,
         }
-        
-        if assignment.id in submitted_ids:
-            submitted_list.append(assignment_info)
+
+        if submission:
+            if submission.status == "rejected":
+                rejected_list.append(assignment_info)
+            else:
+                reviewed_list.append(assignment_info)
         else:
             pending_list.append(assignment_info)
-    
-    # Sort pending by due date (earliest first, None values last)
-    pending_list.sort(key=lambda x: (x['due_date'] is None, x['due_date'] or timezone.now()))
-    
-    # Sort submitted by due date (most recent first)
-    submitted_list.sort(key=lambda x: (x['due_date'] is None, x['due_date'] or timezone.now()), reverse=True)
 
     return render(request, 'assignments/student_assignments.html', {
         'pending_assignments': pending_list,
-        'submitted_assignments': submitted_list,
-        'page_title': 'My Assignments',
+        'submitted_assignments': reviewed_list,
+        'rejected_assignments': rejected_list,
     })
 
 @login_required
@@ -665,3 +760,124 @@ def moderator_stats(request):
         'total_courses': total_courses,
     }
     return render(request, 'moderator/moderator_stats.html', context)
+
+@login_required
+def student_detail(request, enrollment_id):
+    enrollment = get_object_or_404(
+        Enrollment,
+        id=enrollment_id,
+        is_approved=True,
+        course__created_by=request.user
+    )
+
+    student = enrollment.student
+
+    student_enrollments = Enrollment.objects.filter(
+        student=student,
+        is_approved=True,
+        course__created_by=request.user
+    ).select_related("course")
+
+    context = {
+        "student": student,
+        "student_enrollments": student_enrollments,
+    }
+
+    return render(request, "instructors/student_detail.html", context)
+
+@login_required
+def student_course_detail(request, enrollment_id):
+    enrollment = get_object_or_404(
+        Enrollment,
+        id=enrollment_id,
+        is_approved=True,
+        course__created_by=request.user
+    )
+
+    lessons = enrollment.course.lessons.all()
+
+    context = {
+        "enrollment": enrollment,
+        "lessons": lessons,
+    }
+
+    return render(request, "instructors/student_course_detail.html", context)
+
+@login_required
+def approve_submission(request, submission_id):
+    submission = get_object_or_404(
+        Submission,
+        id=submission_id,
+        assignment__created_by=request.user
+    )
+
+    due_date = submission.enrollment.get_assignment_due_date(submission.assignment)
+    is_late = due_date and submission.submitted_at > due_date
+
+    if request.method == "POST":
+        marks = int(request.POST.get("marks"))
+
+        if 0 <= marks <= 10:
+            submission.status = "approved"
+            submission.marks = marks
+            submission.feedback = None
+            submission.save()
+
+            messages.success(request, "Submission approved successfully.")
+            return redirect('view_submissions', assignment_id=submission.assignment.id)
+
+    return render(request, "assignments/approve_submission.html", {
+        "submission": submission,
+        "is_late": is_late,
+        "due_date": due_date
+    })
+    
+@login_required
+def reject_submission(request, submission_id):
+    submission = get_object_or_404(
+        Submission,
+        id=submission_id,
+        assignment__created_by=request.user
+    )
+
+    if request.method == "POST":
+        reason = request.POST.get("reason")
+
+        submission.status = "rejected"
+        submission.marks = None
+        submission.feedback = reason
+        submission.save()
+
+        messages.warning(request, "Submission rejected.")
+        return redirect('view_submissions', assignment_id=submission.assignment.id)
+
+    return render(request, "assignments/reject_submission.html", {
+        "submission": submission
+    })
+
+@login_required
+def instructor_latest_submissions(request):
+    if not request.user.profile.is_instructor:
+        return HttpResponseForbidden("Only instructors allowed.")
+
+    submissions = Submission.objects.filter(
+        assignment__created_by=request.user
+    ).select_related(
+        "assignment",
+        "assignment__course",
+        "enrollment__student"
+    ).order_by("-submitted_at")
+
+    for submission in submissions:
+        due_date = submission.enrollment.get_assignment_due_date(submission.assignment)
+
+        submission.is_late = (
+            due_date is not None and
+            submission.submitted_at > due_date
+        )
+
+        submission.due_date = due_date
+
+    return render(request, "instructors/latest_submissions.html", {
+        "submissions": submissions
+    })

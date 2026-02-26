@@ -38,6 +38,15 @@ urlpatterns = [
     path('instructor/enrollments/', views.manage_enrollments, name='manage_enrollments'),
     path('instructor/enrollments/approve/<int:enrollment_id>/', views.approve_enrollment, name='approve_enrollment'),
     path('instructor/enrollments/remove/<int:enrollment_id>/', views.remove_enrollment, name='remove_enrollment'),
+    path(
+    'instructor/submissions/',
+    views.instructor_latest_submissions,
+    name='instructor_latest_submissions'
+),
+    path("student/<int:enrollment_id>/", views.student_detail, name="student_detail"),
+    path("student/<int:enrollment_id>/course/",views.student_course_detail,name="student_course_detail"),
+
+
 
     # Dashboard & Misc
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -49,6 +58,9 @@ urlpatterns = [
     path('assignments/<int:assignment_id>/submit/', views.submit_assignment, name='submit_assignment'),
     path('assignments/<int:assignment_id>/submissions/', views.view_submissions, name='view_submissions'),
     path('assignments/', views.student_assignments, name='student_assignments'),
+    path("submission/<int:submission_id>/approve/", views.approve_submission, name="approve_submission"),
+    path("submission/<int:submission_id>/reject/", views.reject_submission, name="reject_submission"),
+
 
     # Pending classes
     path('pending-classes/', views.pending_classes, name='pending_classes'),

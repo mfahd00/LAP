@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Latest Submissions | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h3 class="fw-bold text-center mb-4 section-heading">
+    Latest Assignment Submissions
+  </h3>
+
+  {% if submissions %}
+  <div class="table-responsive">
+    <table class="table align-middle text-center shadow-sm rounded-4">
+      <thead class="table-gradient text-white">
+        <tr>
+          <th>#</th>
+          <th>Student</th>
+          <th>Course</th>
+          <th>Assignment</th>
+          <th>Status</th>
+          <th>Submitted On</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in submissions %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ submission.enrollment.student.username }}</td>
+          <td>{{ submission.assignment.course.title }}</td>
+          <td>{{ submission.assignment.title }}</td>
+          <td>
+            {% if submission.status == "approved" %}
+              <span class="badge bg-success">Approved</span>
+            {% elif submission.status == "rejected" %}
+              <span class="badge bg-danger">Rejected</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Submitted</span>
+            {% endif %}
+          </td>
+          <td>{{ submission.submitted_at|date:"F d, Y H:i" }}</td>
+          <td>
+            <a href="{% url 'view_submissions' submission.assignment.id %}" 
+               class="btn btn-outline-primary btn-sm">
+              View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-center">No submissions yet.</p>
+  {% endif %}
+
+</div>
+
+<style>
+.table-gradient {
+  background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
+}
+</style>
+
+{% endblock %}

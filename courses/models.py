@@ -12,6 +12,20 @@ class Profile(models.Model):
     is_moderator = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    YEAR_CHOICES = [
+        (1, "Year 1"),
+        (2, "Year 2"),
+        (3, "Year 3"),
+        (4, "Year 4"),
+        (5, "Year 5"),
+    ]
+
+    year = models.PositiveSmallIntegerField(
+        choices=YEAR_CHOICES,
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return self.user.username
@@ -79,6 +93,35 @@ class Enrollment(models.Model):
     def get_assignment_due_date(self, assignment):
         return self.enrolled_at + timedelta(days=assignment.relative_due_days)
 
+    @property
+    def progress_percentage(self):
+        total_assignments = self.course.assignments.count()
+
+        if total_assignments == 0:
+            return 0
+
+        approved_assignments = self.submissions.filter(
+            status="approved"
+        ).count()
+
+        return int((approved_assignments / total_assignments) * 100)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.course_end_date
+
+    @property
+    def average_mark(self):
+        approved = self.submissions.filter(status="approved", marks__isnull=False)
+
+        if not approved.exists():
+            return 0
+
+        total = sum(sub.marks for sub in approved)
+        return round(total / approved.count(), 2)
+
+
+
 class Assignment(models.Model):
     course = models.ForeignKey(Course, related_name='assignments', on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
@@ -91,7 +134,6 @@ class Assignment(models.Model):
         return f"{self.title} ({self.course.title})"
     
     def get_due_date_for_student(self, student):
-        """Calculate the due date for a specific student based on their enrollment date"""
         from django.utils import timezone
         enrollment = self.course.enrollment_set.filter(student=student).first()
         if enrollment:
@@ -99,15 +141,45 @@ class Assignment(models.Model):
         return None
 
 class Submission(models.Model):
-    assignment = models.ForeignKey(Assignment, related_name='submissions', on_delete=models.CASCADE)
-    student = models.ForeignKey(User, related_name='submissions', on_delete=models.CASCADE)
-    submitted_file = models.FileField(upload_to='')
+    STATUS_CHOICES = [
+        ("submitted", "Submitted"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    assignment = models.ForeignKey(
+        Assignment,
+        related_name='submissions',
+        on_delete=models.CASCADE
+    )
+
+    enrollment = models.ForeignKey(
+    Enrollment,
+    related_name='submissions',
+    on_delete=models.CASCADE,
+)
+
+
+    submitted_file = models.FileField(upload_to='assignments/submissions/')
     submitted_at = models.DateTimeField(auto_now_add=True)
-    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="submitted"
+    )
+
+    marks = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Marks out of 10"
+    )
+
     feedback = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.student.username} - {self.assignment.title}"
+        return f"{self.enrollment.student.username} - {self.assignment.title}"
+
 
 class Announcement(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='announcements')

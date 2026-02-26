@@ -10,101 +10,115 @@
 
     <form method="post" id="studentRegistrationForm" novalidate>
       {% csrf_token %}
-      
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <!-- Username -->
       <div class="mb-3">
         <label class="form-label fw-medium">Username</label>
         {{ form.username|add_class:"form-control" }}
+        {% if form.username.errors %}
+          <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+        {% endif %}
       </div>
-      
-      <div class="mb-3">
-        <label class="form-label fw-medium">Department</label>
-        {{ form.department|add_class:"form-select" }}
-      </div>
-      
+
+      <!-- Email -->
       <div class="mb-3">
         <label class="form-label fw-medium">Email</label>
         {{ form.email|add_class:"form-control" }}
+        {% if form.email.errors %}
+          <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+        {% endif %}
       </div>
 
+      <!-- Department -->
+      <div class="mb-3">
+        <label class="form-label fw-medium">Department</label>
+        {{ form.department|add_class:"form-select" }}
+        {% if form.department.errors %}
+          <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-medium">Year</label>
+        {{ form.year|add_class:"form-select" }}
+        {% if form.year.errors %}
+          <div class="text-danger small mt-1">
+            {{ form.year.errors.0 }}
+          </div>
+        {% endif %}
+      </div>  
+
+      <!-- Password -->
       <div class="mb-3">
         <label class="form-label fw-medium">Password</label>
         {{ form.password1|add_class:"form-control" }}
+        {% if form.password1.errors %}
+          <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+        {% endif %}
       </div>
 
-      <div class="mb-3">
+      <!-- Confirm Password -->
+      <div class="mb-4">
         <label class="form-label fw-medium">Confirm Password</label>
         {{ form.password2|add_class:"form-control" }}
+        {% if form.password2.errors %}
+          <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+        {% endif %}
       </div>
 
-
-      <button type="submit" class="btn w-100 py-2">Register as Student</button>
+      <button type="submit" class="btn w-100 py-2">
+        Register as Student
+      </button>
     </form>
 
     <p class="text-center mt-3">
-      Already have an account? <a href="{% url 'login' %}">Login here</a>.
+      Already have an account? 
+      <a href="{% url 'login' %}">Login here</a>.
     </p>
+
   </div>
 </div>
 
 <style>
-  .form-container h2 {
-    font-weight: 700;
-  }
+.form-control, .form-select {
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+}
 
-  .form-control, .form-select {
-    border-radius: 8px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    background-color: rgba(255, 255, 255, 0.9);
-    color: #212529;
-    transition: all 0.3s ease;
-  }
+.form-control:focus, .form-select:focus {
+  border-color: #2a7df5;
+  box-shadow: 0 0 8px rgba(42, 125, 245, 0.5);
+}
 
-  .form-control:focus, .form-select:focus {
-    border-color: #2a7df5;
-    box-shadow: 0 0 8px rgba(42, 125, 245, 0.5);
-  }
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #f8f9fa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
-  body.light-mode .form-label, 
-  body.light-mode p, 
-  body.light-mode a {
-    color: #212529 !important;
-  }
+.btn {
+  background: linear-gradient(135deg, #0a58ca, #084bb5);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: 0.3s;
+}
 
-  body.dark-mode .form-label, 
-  body.dark-mode p, 
-  body.dark-mode a {
-    color: #f8f9fa !important;
-  }
-
-  body.dark-mode .form-control,
-  body.dark-mode .form-select {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #f8f9fa;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  input::placeholder {
-    color: #6c757d !important;
-  }
-
-  body.dark-mode input::placeholder {
-    color: #d1d1d1 !important;
-  }
-
-  .btn {
-    background: linear-gradient(135deg, #0a58ca, #084bb5);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    transition: 0.3s;
-    font-weight: 600;
-  }
-
-  .btn:hover {
-    background: linear-gradient(135deg, #2a7df5, #1a4a8c);
-    box-shadow: 0 3px 12px rgba(42, 125, 245, 0.4);
-  }
+.btn:hover {
+  background: linear-gradient(135deg, #2a7df5, #1a4a8c);
+  box-shadow: 0 3px 12px rgba(42, 125, 245, 0.4);
+}
 </style>
 
 <script>
@@ -126,4 +140,5 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 });
 </script>
+
 {% endblock %}

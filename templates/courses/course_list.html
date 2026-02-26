@@ -6,9 +6,13 @@
 <div class="container py-4">
 
   <!-- 🏷️ Page Heading -->
-  <div class="mb-3">
-    <h2 class="fw-bold section-heading">All Courses</h2>
-  </div>
+  <h2 class="fw-bold section-heading">
+  {% if user.is_authenticated and user.profile.is_instructor %}
+    My Courses
+  {% else %}
+    All Courses
+  {% endif %}
+</h2>
 
   <!-- 🔹 Filter Row -->
   <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 border-bottom pb-2">

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Student Details | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4 d-flex justify-content-center">
+  <div class="overlay-box w-100" style="max-width: 900px;">
+    <div class="p-4">
+
+      <h3 class="fw-bold mb-4 text-center section-heading">
+        Student Profile
+      </h3>
+
+      <!-- Student Info -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <strong>Username:</strong> {{ student.username }}
+        </div>
+        <div class="col-md-6">
+          <strong>Email:</strong> {{ student.email }}
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Courses Table -->
+      <h5 class="fw-bold mb-3 text-center text-primary">
+        Enrolled Courses (Under You)
+      </h5>
+
+      {% if student_enrollments %}
+      <div class="table-responsive">
+        <table class="table align-middle text-center shadow-sm rounded-4">
+          <thead class="table-gradient text-white">
+            <tr>
+  <th>#</th>
+  <th>Course</th>
+  <th>Enrolled On</th>
+  <th>Ends On</th>
+  <th>Progress</th>
+  <th>Action</th>
+</tr>
+
+          </thead>
+          <tbody>
+            {% for enrollment in student_enrollments %}
+            <tr>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ enrollment.course.title }}</td>
+  <td>{{ enrollment.enrolled_at|date:"F d, Y" }}</td>
+
+  <td>
+  {{ enrollment.course_end_date|date:"F d, Y" }}
+
+  {% if enrollment.is_expired %}
+    <span class="badge bg-danger ms-2">Expired</span>
+  {% endif %}
+</td>
+
+
+  <td style="min-width: 220px;">
+  <div class="progress" style="height: 20px;">
+    <div class="progress-bar
+      {% if enrollment.progress_percentage < 40 %}
+        bg-danger
+      {% elif enrollment.progress_percentage < 75 %}
+        bg-warning
+      {% else %}
+        bg-success
+      {% endif %}"
+      role="progressbar"
+      style="width: {{ enrollment.progress_percentage }}%;"
+      aria-valuenow="{{ enrollment.progress_percentage }}"
+      aria-valuemin="0"
+      aria-valuemax="100">
+      {{ enrollment.progress_percentage }}%
+    </div>
+  </div>
+
+  {% if enrollment.progress_percentage == 100 %}
+    <span class="badge bg-success mt-1">Completed</span>
+  {% endif %}
+</td>
+
+
+  <td>
+    <a href="{% url 'student_course_detail' enrollment.id %}"
+       class="btn btn-outline-primary btn-sm px-3">
+       View Course
+    </a>
+  </td>
+</tr>
+
+
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-center mt-3">No enrollments found.</p>
+      {% endif %}
+
+      <div class="text-center mt-4">
+        <a href="{% url 'manage_enrollments' %}" 
+           class="btn btn-outline-secondary px-4">
+           Back
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.table-gradient {
+  background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
+}
+</style>
+
+{% endblock %}

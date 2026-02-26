@@ -107,18 +107,26 @@ class StudentRegistrationForm(UserCreationForm):
         required=True,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    year = forms.ChoiceField(
+        choices=Profile.YEAR_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2', 'department']
+        fields = ['username', 'email', 'password1', 'password2', 'department', 'year']
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
+
         if commit:
             user.save()
             profile = user.profile
             profile.department = self.cleaned_data['department']
+            profile.year = int(self.cleaned_data['year'])
             profile.is_instructor = False
             profile.save()
+
         return user
