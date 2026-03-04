@@ -1,0 +1,91 @@
+<!-- ================= Pending ================= -->
+<div class="mb-5">
+  <h5 class="fw-bold mb-3 text-primary text-center">
+    Pending Approvals
+    {% if pending_enrollments %}
+      <span class="badge bg-danger rounded-pill ms-2">
+        {{ pending_enrollments|length }}
+      </span>
+    {% endif %}
+  </h5>
+
+  {% if pending_enrollments %}
+  <div class="table-responsive">
+    <table class="table align-middle text-center shadow-sm">
+      <thead class="table-gradient text-white">
+        <tr>
+          <th>#</th>
+          <th>Student</th>
+          <th>Email</th>
+          <th>Course</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for enrollment in pending_enrollments %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ enrollment.student.username }}</td>
+          <td>{{ enrollment.student.email }}</td>
+          <td>{{ enrollment.course.title }}</td>
+          <td>
+            <button class="btn btn-success btn-sm ajax-action"
+                    data-url="{% url 'approve_enrollment' enrollment.id %}">
+              Approve
+            </button>
+            <button class="btn btn-danger btn-sm ajax-action"
+                    data-url="{% url 'remove_enrollment' enrollment.id %}">
+              Decline
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-center mt-3 mb-0">No pending enrollment requests.</p>
+  {% endif %}
+</div>
+
+
+<!-- ================= Approved ================= -->
+<div>
+  <h5 class="fw-bold mb-3 text-success text-center">
+    Approved Students
+  </h5>
+
+  {% if approved_enrollments %}
+  <div class="table-responsive">
+    <table class="table align-middle text-center shadow-sm">
+      <thead class="table-gradient text-white">
+        <tr>
+          <th>#</th>
+          <th>Student</th>
+          <th>Email</th>
+          <th>Course</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for enrollment in approved_enrollments %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ enrollment.student.username }}</td>
+          <td>{{ enrollment.student.email }}</td>
+          <td>{{ enrollment.course.title }}</td>
+          <td>
+            <button class="btn btn-danger btn-sm ajax-action"
+                    data-url="{% url 'remove_enrollment' enrollment.id %}">
+              Remove
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-center mt-3 mb-0">No approved students yet.</p>
+  {% endif %}
+</div>

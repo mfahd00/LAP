@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My Profile | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4 d-flex justify-content-center">
+  <div class="card shadow-lg p-4 w-100" style="max-width: 750px; border-radius: 18px;">
+
+    <div class="text-center mb-4">
+      {% if profile.profile_pic %}
+        <img src="{{ profile.profile_pic.url }}" 
+             class="rounded-circle mb-3 shadow"
+             style="width: 130px; height: 130px; object-fit: cover;">
+      {% else %}
+        <img src="{% static 'images/default-profile.png' %}" 
+             class="rounded-circle mb-3 shadow"
+             style="width: 130px; height: 130px; object-fit: cover;">
+      {% endif %}
+
+      <h3 class="fw-bold">{{ profile.user.username }}</h3>
+      <p class="section-subheading mb-1">{{ profile.user.email }}</p>
+
+      <span class="badge bg-primary px-3 py-2">
+        {% if profile.is_moderator %}
+          Moderator
+        {% elif profile.is_instructor %}
+          Instructor
+        {% else %}
+          Student
+        {% endif %}
+      </span>
+    </div>
+
+    <hr>
+
+    <div class="row mb-3">
+      <div class="col-md-6 mb-3">
+        <strong>Department:</strong><br>
+        {{ profile.department.name|default:"Not specified" }}
+      </div>
+
+      {% if not profile.is_instructor and not profile.is_moderator %}
+      <div class="col-md-6 mb-3">
+        <strong>Year:</strong><br>
+        {{ profile.get_year_display|default:"Not specified" }}
+      </div>
+      {% endif %}
+
+      <div class="col-md-6 mb-3">
+        <strong>Phone:</strong><br>
+        {{ profile.phone|default:"Not added" }}
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <strong>Date Joined:</strong><br>
+        {{ profile.user.date_joined|date:"F d, Y" }}
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <strong>Bio:</strong>
+      <p class="mt-2">
+        {{ profile.bio|default:"No bio added yet." }}
+      </p>
+    </div>
+
+    <div class="text-center">
+      <a href="{% url 'edit_profile' %}" 
+         class="btn px-4 py-2"
+         style="border-radius: 12px; background: linear-gradient(45deg,#007bff,#00c6ff); color:white;">
+        Edit Profile
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

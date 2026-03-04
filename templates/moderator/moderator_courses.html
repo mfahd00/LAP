@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container py-5">
+
+  <!-- 🔍 Filter Box -->
+  <div class="overlay-box p-4 mb-4">
+    <h3 class="section-heading mb-4">📚 All Courses</h3>
+
+    <form id="filter-form" class="row g-3 align-items-end">
+
+      <div class="col-md-4">
+        <label class="small fw-semibold">Search</label>
+        <input type="text"
+               name="search"
+               value="{{ search|default:'' }}"
+               class="form-control"
+               placeholder="Search title or instructor">
+      </div>
+
+      <div class="col-md-3">
+        <label class="small fw-semibold">Sort By</label>
+        <select name="sort" class="form-select">
+          <option value="most_students" {% if sort == "most_students" %}selected{% endif %}>Most Students</option>
+          <option value="least_students" {% if sort == "least_students" %}selected{% endif %}>Least Students</option>
+          <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
+          <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <button type="submit" class="btn w-100">Apply</button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- 📦 Course Container -->
+  <div class="overlay-box p-4">
+    <div id="course-container">
+        {% include "moderator/course_list.html" %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("filter-form");
+    const container = document.getElementById("course-container");
+
+    function loadCourses() {
+
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData).toString();
+
+        container.style.opacity = "0.4";
+
+        fetch(`${window.location.pathname}?${params}`, {
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            container.innerHTML = data.html;
+            container.style.opacity = "1";
+        })
+        .catch(error => {
+            console.error("AJAX Error:", error);
+            container.style.opacity = "1";
+        });
+    }
+
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        loadCourses();
+    });
+
+});
+</script>
+{% endblock %}

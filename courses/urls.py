@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from courses import views as course_views
 from . import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', course_views.home, name='home'),
@@ -28,11 +29,49 @@ urlpatterns = [
     path('login/instructor/', views.login_instructor, name='login_instructor'),
     path('logout/', views.logout_view, name='logout'),
 
+
+    path(
+        'password_reset/',
+        auth_views.PasswordResetView.as_view(
+            template_name='auth/password_reset.html'
+        ),
+        name='password_reset'
+    ),
+
+    path(
+        'password_reset_done/',
+        auth_views.PasswordResetDoneView.as_view(
+            template_name='auth/password_reset_done.html'
+        ),
+        name='password_reset_done'
+    ),
+
+    path(
+        'reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='auth/password_reset_confirm.html'
+        ),
+        name='password_reset_confirm'
+    ),
+
+    path(
+        'reset_done/',
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name='auth/password_reset_complete.html'
+        ),
+        name='password_reset_complete'
+    ),
+
     # Moderator actions
     path('moderator/instructors/', views.instructors, name='instructors'),
     path('moderator/approve/<int:user_id>/', views.approve_instructor, name='approve_instructor'),
     path('moderator/remove/<int:user_id>/', views.remove_instructor, name='remove_instructor'),
     path('moderator/stats/', views.moderator_stats, name='moderator_stats'),
+    path('moderator/instructor/<int:user_id>/', views.instructor_detail, name='instructor_detail'),
+    path('moderator/students/', views.moderator_students, name='moderator_students'),
+    path('moderator/students/export/', views.export_students_csv, name='export_students_csv'),
+    path('moderator/instructors/export/', views.export_instructors_csv, name='export_instructors_csv'),
+    path("moderator/courses/", views.moderator_courses, name="moderator_courses"),
 
     # Instructor enrollment management
     path('instructor/enrollments/', views.manage_enrollments, name='manage_enrollments'),
@@ -70,4 +109,16 @@ urlpatterns = [
     path('courses/<int:course_id>/announcements/create/', views.create_announcement, name='create_announcement'),
     path('announcements/', views.global_announcement_list, name='global_announcement_list'),
     path('create/', views.create_announcement, name='create_announcement'),
+
+    path("session-check/", views.session_check, name="session_check"),
+
+    path("profile/", views.profile_view, name="profile"),
+    path("profile/edit/", views.edit_profile, name="edit_profile"),
+
+    path('my-courses/', views.my_enrolled_courses, name='my_enrolled_courses'),
+
+    path('lesson/download/<int:lesson_id>/',
+     views.download_lesson_material,
+     name='download_lesson_material'),
+     path('downloads/', views.student_downloads, name='student_downloads'),
 ]

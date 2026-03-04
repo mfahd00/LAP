@@ -105,8 +105,20 @@
               <small class="section-subheading">{{ lesson.content|truncatewords:25 }}</small>
             </div>
             {% if lesson.video_url %}
-              <a href="{{ lesson.video_url }}" target="_blank" class="btn btn-outline-info btn-sm">🎥 Watch</a>
-            {% endif %}
+    <a href="{{ lesson.video_url }}"
+       target="_blank"
+       class="btn btn-outline-info btn-sm">
+       🎥 Watch
+    </a>
+  {% endif %}
+
+  {% if lesson.material %}
+    <a href="{% url 'download_lesson_material' lesson.id %}"
+       class="btn btn-outline-primary btn-sm"
+       download>
+       ⬇ Download
+    </a>
+  {% endif %}
           </li>
         {% endfor %}
       </ul>

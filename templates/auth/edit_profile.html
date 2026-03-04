@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Edit Profile | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-5 d-flex justify-content-center">
+  <div class="card shadow-lg p-5 w-100" style="max-width: 650px; border-radius: 18px;">
+
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">Update Profile</h2>
+      <p class="text-muted small">Manage your personal information</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Profile Image -->
+      <div class="text-center mb-4">
+
+        {% if request.user.profile.profile_pic %}
+          <img id="previewImage"
+               src="{{ request.user.profile.profile_pic.url }}"
+               class="rounded-circle shadow mb-3"
+               style="width:130px;height:130px;object-fit:cover;">
+        {% else %}
+          <img id="previewImage"
+               src="{% static 'images/default-profile.png' %}"
+               class="rounded-circle shadow mb-3"
+               style="width:130px;height:130px;object-fit:cover;">
+        {% endif %}
+
+        <div>
+          <label class="btn btn-outline-light rounded-pill px-4">
+            Change Photo
+            {{ form.profile_pic }}
+          </label>
+        </div>
+
+      </div>
+
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Phone</label>
+          {{ form.phone }}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Department</label>
+          {{ form.department }}
+        </div>
+
+        {% if not request.user.profile.is_instructor and not request.user.profile.is_moderator %}
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Year</label>
+          {{ form.year }}
+        </div>
+        {% endif %}
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Bio</label>
+          {{ form.bio }}
+        </div>
+
+      </div>
+
+      <div class="d-flex justify-content-center gap-3 mt-5">
+        <button type="submit"
+                class="btn px-4 py-2"
+                style="border-radius: 25px;
+                       background: linear-gradient(135deg,#28a745,#20c997);
+                       color:white;">
+          Save Changes
+        </button>
+
+        <a href="{% url 'profile' %}"
+           class="btn btn-outline-secondary px-4 py-2 rounded-pill">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            document.getElementById('previewImage').src = reader.result;
+        }
+        reader.readAsDataURL(e.target.files[0]);
+    }
+});
+</script>
+
+{% endblock %}

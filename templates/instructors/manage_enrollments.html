@@ -3,109 +3,59 @@
 
 {% block content %}
 <div class="container py-4 d-flex justify-content-center">
-  <div class="overlay-box w-100" style="max-width: 1050px;">
+  <div class="overlay-box w-100" style="max-width: 1100px;">
     <div class="p-4">
-      <h3 class="fw-bold mb-4 text-center section-heading">Student Enrollments</h3>
-      <form method="get" class="mb-4">
-  <div class="d-flex justify-content-end align-items-center gap-2 flex-wrap">
-    <label for="course" class="fw-semibold">Filter by Course:</label>
-    <select id="course" name="course" class="form-select w-auto" onchange="this.form.submit()">
-      <option value="">All Courses</option>
-      {% for course in instructor_courses %}
-        <option value="{{ course.id }}" {% if selected_course == course.id|stringformat:'s' %}selected{% endif %}>
-          {{ course.title }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-</form>
 
+      <h3 class="fw-bold mb-4 text-center section-heading">
+        Student Enrollments
+      </h3>
 
+      <!-- 🔎 AJAX Search + Filters -->
+      <form id="enrollment-filter-form" method="GET" class="mb-4">
+        <div class="row g-3 align-items-end">
 
-      <!-- Pending Enrollments -->
-      <div class="mb-5">
-        <h5 class="fw-bold mb-3 text-primary text-center">
-  Pending Approvals
-  {% if pending_count > 0 %}
-    <span class="badge bg-danger rounded-pill ms-2">{{ pending_count }}</span>
-  {% endif %}
-</h5>
+          <div class="col-md-4">
+            <input type="text"
+                   name="search"
+                   value="{{ request.GET.search }}"
+                   class="form-control"
+                   placeholder="Search by name or email">
+          </div>
 
-        {% if pending_enrollments %}
-        <div class="table-responsive">
-          <table class="table align-middle text-center mb-0 shadow-sm rounded-4">
-            <thead class="table-gradient text-white">
-              <tr>
-                <th>#</th>
-                <th>Student</th>
-                <th>Email</th>
-                <th>Course</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for enrollment in pending_enrollments %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ enrollment.student.username }}</td>
-                <td>{{ enrollment.student.email }}</td>
-                <td>{{ enrollment.course.title }}</td>
-                <td>
-                  <a href="{% url 'approve_enrollment' enrollment.id %}" class="btn btn-success btn-sm px-3 me-2">Approve</a>
-                  <a href="{% url 'remove_enrollment' enrollment.id %}" class="btn btn-outline-danger btn-sm px-3">Decline</a>
-                </td>
-              </tr>
+          <div class="col-md-3">
+            <select name="course" class="form-select">
+              <option value="">All Courses</option>
+              {% for course in instructor_courses %}
+              <option value="{{ course.id }}"
+                {% if selected_course == course.id|stringformat:'s' %}selected{% endif %}>
+                {{ course.title }}
+              </option>
               {% endfor %}
-            </tbody>
-          </table>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <select name="sort" class="form-select">
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
+              <option value="course">Course</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 d-grid">
+            <button class="btn btn-info fw-semibold">Apply</button>
+          </div>
+
         </div>
-        {% else %}
-        <p class="text-center  mt-3 mb-0">No pending enrollment requests.</p>
-        {% endif %}
+      </form>
+
+      <!-- 📦 AJAX TABLE CONTAINER -->
+      <div id="enrollment-container">
+        {% include "instructors/enrollment_table.html" %}
       </div>
 
-      <!-- Approved Enrollments -->
-      <div>
-        <h5 class="fw-bold mb-3 text-success text-center">Approved Students</h5>
-        {% if approved_enrollments %}
-        <div class="table-responsive">
-          <table class="table align-middle text-center mb-0 shadow-sm rounded-4">
-            <thead class="table-gradient text-white">
-              <tr>
-                <th>#</th>
-                <th>Student</th>
-                <th>Email</th>
-                <th>Course</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for enrollment in approved_enrollments %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ enrollment.student.username }}</td>
-                <td>{{ enrollment.student.email }}</td>
-                <td>{{ enrollment.course.title }}</td>
-                <td>
-  <a href="{% url 'student_detail' enrollment.student.id %}" 
-     class="btn btn-outline-primary btn-sm px-3 me-2">
-     View
-  </a>
-  <a href="{% url 'remove_enrollment' enrollment.id %}" 
-     class="btn btn-danger btn-sm px-3">
-     Remove
-  </a>
-</td>
-
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <p class="text-center  mt-3 mb-0">No approved students yet.</p>
-        {% endif %}
-      </div>
     </div>
   </div>
 </div>
@@ -114,18 +64,65 @@
 .table-gradient {
   background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
 }
-.table {
-  border-radius: 1rem;
-  overflow: hidden;
-}
-.table tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  transition: 0.2s;
-}
 .overlay-box {
   background: var(--bs-body-bg);
   border-radius: 1rem;
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
+}
+.table tbody tr:hover {
+  background-color: rgba(0,0,0,0.05);
+  transition: 0.2s;
+}
+.fade-wrapper {
+  transition: opacity 0.25s ease;
 }
 </style>
+
+<!-- 🚀 AJAX SCRIPT -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const form = document.getElementById("enrollment-filter-form");
+  const container = document.getElementById("enrollment-container");
+
+  let timeout = null;
+
+  function fetchData() {
+    const params = new URLSearchParams(new FormData(form));
+
+    container.style.opacity = "0.4";
+
+    fetch("?" + params.toString(), {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(res => res.text())
+    .then(html => {
+      container.innerHTML = html;
+      container.style.opacity = "1";
+    });
+  }
+
+  form.addEventListener("input", function () {
+    clearTimeout(timeout);
+    timeout = setTimeout(fetchData, 300);
+  });
+
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    fetchData();
+  });
+
+  container.addEventListener("click", function(e) {
+    if (e.target.classList.contains("ajax-action")) {
+      const url = e.target.dataset.url;
+
+      fetch(url, {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      }).then(() => fetchData());
+    }
+  });
+
+});
+</script>
+
 {% endblock %}

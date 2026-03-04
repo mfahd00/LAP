@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-5">
+
+  <div class="overlay-box p-4 mb-4">
+    <h3 class="section-heading mb-4">📥 My Downloads</h3>
+
+    <form method="get" class="row g-3 align-items-end">
+
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Search</label>
+        <input type="text" name="search"
+               value="{{ request.GET.search }}"
+               class="form-control"
+               placeholder="Search lesson...">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Category</label>
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}"
+              {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+              {{ cat.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Course</label>
+        <select name="course" class="form-select">
+          <option value="">All My Courses</option>
+          {% for c in enrolled_courses %}
+            <option value="{{ c.id }}"
+              {% if request.GET.course == c.id|stringformat:"s" %}selected{% endif %}>
+              {{ c.title }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Sort</label>
+        <select name="sort" class="form-select">
+          <option value="latest" {% if request.GET.sort == "latest" %}selected{% endif %}>Latest</option>
+          <option value="oldest" {% if request.GET.sort == "oldest" %}selected{% endif %}>Oldest</option>
+        </select>
+      </div>
+
+      <div class="col-md-1">
+        <button class="btn w-200">Go</button>
+      </div>
+
+    </form>
+  </div>
+
+
+  {% if downloads %}
+  <div class="overlay-box p-4">
+
+    <div class="row g-4">
+      {% for item in downloads %}
+      <div class="col-md-6">
+
+        <div class="download-card p-3 h-100">
+
+          <div class="d-flex justify-content-between align-items-start">
+
+            <div>
+              <h6 class="fw-semibold mb-1">
+                {{ item.lesson.title }}
+              </h6>
+
+              <small class="text-muted">
+                {{ item.lesson.course.title }}
+              </small>
+
+              <div class="small text-muted mt-1">
+                Downloaded {{ item.downloaded_at|date:"M d, Y • H:i" }}
+              </div>
+            </div>
+
+            <a href="{% url 'download_lesson_material' item.lesson.id %}"
+               class="btn btn-sm btn-download">
+               ⬇
+            </a>
+
+          </div>
+
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+  {% else %}
+
+  <div class="overlay-box p-5 text-center empty-state">
+    <h5 class="mb-2">No Downloads Yet</h5>
+    <p class="text-muted mb-0">
+      Download lesson materials and they’ll appear here.
+    </p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}

@@ -14,7 +14,7 @@ class CourseForm(forms.ModelForm):
 class LessonForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['title', 'content', 'video_url']
+        fields = ['title', 'content', 'video_url', 'material']
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -78,6 +78,7 @@ class AnnouncementForm(forms.ModelForm):
         
 class InstructorRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
+    verification_document = forms.FileField(required=True)
     department = forms.ModelChoiceField(
         queryset=Department.objects.all(),
         required=True,
@@ -86,7 +87,7 @@ class InstructorRegistrationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2', 'department']
+        fields = ['username', 'email', 'password1', 'password2', 'department', 'verification_document']
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -96,6 +97,7 @@ class InstructorRegistrationForm(UserCreationForm):
             profile = user.profile
             profile.department = self.cleaned_data['department']
             profile.is_instructor = True
+            profile.verification_document = self.cleaned_data['verification_document']
             profile.save()
         return user
 
@@ -130,3 +132,19 @@ class StudentRegistrationForm(UserCreationForm):
             profile.save()
 
         return user
+
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['profile_pic', 'phone', 'department', 'year', 'bio']
+        widgets = {
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'department': forms.Select(attrs={'class': 'form-select'}),
+            'year': forms.Select(attrs={'class': 'form-select'}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'profile_pic': forms.FileInput(attrs={'class': 'd-none'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['profile_pic'].required = False

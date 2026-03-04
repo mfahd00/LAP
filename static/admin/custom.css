@@ -1,0 +1,16 @@
+.navbar {
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+}
+
+.brand-link {
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    border: none;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}

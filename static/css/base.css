@@ -38,17 +38,16 @@ body {
 }
 
 
+/* ── THEME SWITCH — sidebar toggle only ───────────────── */
 .theme-switch {
   position: relative;
-  width: 55px;
-  height: 28px;
+  width: 46px;
+  height: 24px;
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 50px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 6px;
+  display: block;
+  padding: 0;
   transition: all 0.4s ease;
 }
 
@@ -56,21 +55,15 @@ body {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   background-color: #fff;
   border-radius: 50%;
   transition: all 0.4s ease;
 }
 
 .theme-switch.active .switch-circle {
-  left: calc(100% - 25px);
-}
-
-.theme-switch .icon {
-  font-size: 14px;
-  z-index: 1;
-  opacity: 0.8;
+  transform: translateX(22px);
 }
 
 
@@ -169,7 +162,6 @@ body {
 }
 
 
-
 .btn,
 button,
 input[type="submit"] {
@@ -249,7 +241,7 @@ input[type="submit"]:disabled {
 }
 
 .fab-btn {
-  background-color: #0d6efd; /* Bootstrap primary blue */
+  background-color: #0d6efd;
   color: #fff !important;
   border: none;
   border-radius: 50px;
@@ -277,13 +269,12 @@ input[type="submit"]:disabled {
   font-size: 0.95rem;
 }
 
-/* Hover animation */
 .fab-btn:hover {
   width: 180px;
   justify-content: flex-start;
   padding-left: 1.2rem;
   transform: translateY(-3px);
-  background-color: #0b5ed7; /* darker blue on hover */
+  background-color: #0b5ed7;
 }
 
 .fab-btn:hover .fab-text {
@@ -296,17 +287,38 @@ input[type="submit"]:disabled {
   transform: rotate(90deg);
 }
 
-/* Dark mode */
 @media (prefers-color-scheme: dark) {
   .fab-btn {
-    background-color: #1d4ed8; /* soft indigo */
+    background-color: #1d4ed8;
   }
   .fab-btn:hover {
     background-color: #2563eb;
   }
 }
 
+.download-card {
+  border: 1px solid rgba(26, 74, 140, 0.08);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  background: var(--bs-body-bg);
+  box-shadow: 0 8px 18px rgba(26, 74, 140, 0.08);
+}
 
+.download-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 30px rgba(26, 74, 140, 0.15);
+  border-color: #1a4a8c;
+}
 
+.btn-download {
+  background: linear-gradient(135deg, #1a4a8c, #2a7df5);
+  color: #fff !important;
+  border-radius: 8px;
+  border: none;
+  transition: 0.3s ease;
+}
 
-
+.btn-download:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(26, 74, 140, 0.3);
+}

@@ -5,166 +5,177 @@
 {% block content %}
 <div class="container py-4">
 
-  <!-- 🏷️ Page Heading -->
-  <h2 class="fw-bold section-heading">
-  {% if user.is_authenticated and user.profile.is_instructor %}
-    My Courses
-  {% else %}
-    All Courses
-  {% endif %}
-</h2>
-
-  <!-- 🔹 Filter Row -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 border-bottom pb-2">
-
-    <!-- Sort By -->
-    <div class="d-flex align-items-center flex-wrap gap-2">
-      <h6 class="fw-semibold mb-0 me-2 text-muted">Sort by:</h6>
-      <a href="?sort=popular{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}"
-         class="btn btn-sm btn-outline-primary {% if request.GET.sort == 'popular' or not request.GET.sort %}active{% endif %}">
-         Popular
-      </a>
-      <a href="?sort=newest{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}"
-         class="btn btn-sm btn-outline-primary {% if request.GET.sort == 'newest' %}active{% endif %}">
-         Newest
-      </a>
-      <a href="?sort=oldest{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}"
-         class="btn btn-sm btn-outline-primary {% if request.GET.sort == 'oldest' %}active{% endif %}">
-         Oldest
-      </a>
-    </div>
-
-    <!-- Browse by Category -->
-    {% if categories %}
-    <div class="dropdown mt-2 mt-md-0">
-      <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        {% if request.GET.category %}
-          {% for cat in categories %}
-            {% if cat.id|stringformat:'s' == request.GET.category %}
-              {{ cat.name }}
-            {% endif %}
-          {% endfor %}
-        {% else %}
-          Browse by Category
-        {% endif %}
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-        <li>
-          <a class="dropdown-item {% if not request.GET.category %}active{% endif %}" href="{% url 'course_list' %}">All</a>
-        </li>
-        {% for cat in categories %}
-        <li>
-          <a class="dropdown-item {% if request.GET.category|default:'' == cat.id|stringformat:'s' %}active{% endif %}"
-             href="?category={{ cat.id }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-             {{ cat.name }}
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- 🎓 Course Cards -->
-  <!-- 🎓 Course Cards -->
-<div class="row g-4">
-{% for course in page_obj %}
-<div class="col-md-6 col-lg-4">
-  <div class="course-card h-100 p-4 d-flex flex-column">
-
-    <h5 class="fw-bold mb-2">
-      <a href="{% url 'course_detail' course.id %}" class="text-decoration-none section-subheading">
-        {{ course.title }}
-      </a>
-    </h5>
-
-    <div class="mb-2 d-flex flex-wrap gap-2">
-      {% if course.category %}
-        <span class="badge badge-cat">{{ course.category.name }}</span>
+  <!-- 🔷 Page Heading -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold section-heading mb-0">
+      {% if user.is_authenticated and user.profile.is_instructor %}
+        My Courses
       {% else %}
-        <span class="badge bg-secondary">Uncategorized</span>
+        Explore Courses
       {% endif %}
+    </h2>
+  </div>
 
-      {% if course.difficulty == "beginner" %}
-        <span class="badge badge-beg">Beginner</span>
-      {% elif course.difficulty == "intermediate" %}
-        <span class="badge badge-int">Intermediate</span>
-      {% elif course.difficulty == "hard" %}
-        <span class="badge badge-hard">Hard</span>
-      {% endif %}
+  {% if not user.profile.is_instructor %}
+  <!-- 🔎 Advanced Search -->
+  <form id="course-filter-form" method="GET" class="course-card p-4 mb-4 shadow-sm">
+    <div class="row g-3">
+
+      <div class="col-md-3">
+        <input type="text" name="search"
+               value="{{ request.GET.search }}"
+               class="form-control"
+               placeholder="Search by title or instructor">
+      </div>
+
+      <div class="col-md-2">
+        <select name="difficulty" class="form-select">
+          <option value="">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="hard">Advanced</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <input type="number" name="min_duration"
+               class="form-control"
+               placeholder="Min Days">
+      </div>
+
+      <div class="col-md-2">
+        <input type="number" name="max_duration"
+               class="form-control"
+               placeholder="Max Days">
+      </div>
+
+      <div class="col-md-1 d-grid">
+        <button type="submit" class="btn btn-info fw-semibold">Go</button>
+      </div>
+
     </div>
 
-    <p class="small mb-1"><strong>Instructor:</strong> {{ course.created_by.username }}</p>
-    <p class="small mb-1"><strong>Students Enrolled:</strong> {{ course.enrollment_set.count }}</p>
-    <p class="small mb-3"><strong>Duration:</strong> {{ course.duration_days }} days</p>
+    <!-- 🔄 Sort Buttons -->
+    <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+      <small class="text-muted me-2">Sort:</small>
 
-    <div class="mt-auto">
-      <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-info w-100 fw-semibold">
-        View Course
+      <button type="button" class="btn btn-sm btn-outline-primary sort-btn" data-sort="popular">Popular</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sort-btn" data-sort="newest">Newest</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sort-btn" data-sort="oldest">Oldest</button>
+
+      <a href="{% url 'course_list' %}" class="btn btn-sm btn-outline-secondary ms-auto">
+        Reset
       </a>
     </div>
+
+    <input type="hidden" name="sort" id="sort-input" value="{{ request.GET.sort }}">
+  </form>
+  {% endif %}
+
+  <!-- 🎓 AJAX Course Container -->
+  <div id="course-container" class="fade-wrapper">
+    {% include "courses/course_grid.html" %}
   </div>
-</div>
-{% empty %}
-<div class="empty-state text-center py-5">
-  <p class="mb-3 text-muted">No courses found.</p>
-  <a href="{% url 'dashboard' %}" class="btn btn-outline-info px-4 py-2 ">Go to Dashboard</a>
-</div>
-{% endfor %}
+
 </div>
 
-  <!-- 📄 Pagination -->
-  <div class="mt-5">
-    <nav aria-label="Page navigation">
-      <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link custom-page-link"
-            href="?page={{ page_obj.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
-            Previous
-          </a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link custom-page-link disabled">Previous</span></li>
-        {% endif %}
-
-        {% for num in page_obj.paginator.page_range %}
-        {% if page_obj.number == num %}
-        <li class="page-item active">
-          <span class="page-link bg-info border-0 text-dark fw-bold">{{ num }}</span>
-        </li>
-        {% else %}
-        <li class="page-item">
-          <a class="page-link custom-page-link"
-            href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
-            {{ num }}
-          </a>
-        </li>
-        {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link custom-page-link"
-            href="?page={{ page_obj.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
-            Next
-          </a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link custom-page-link disabled">Next</span></li>
-        {% endif %}
-      </ul>
-    </nav>
-  </div>
-</div>
+<!-- ➕ Instructor Create Button -->
 {% if user.is_authenticated and user.profile.is_instructor %}
 <div class="fab-container position-fixed" style="bottom: 30px; right: 30px; z-index: 1050;">
-  <a href="{% url 'create_course' %}" class="fab-btn d-flex align-items-center justify-content-center text-white text-decoration-none">
+  <a href="{% url 'create_course' %}"
+     class="fab-btn d-flex align-items-center justify-content-center text-white text-decoration-none">
     <span class="fab-icon">+</span>
     <span class="fab-text ms-2">Create</span>
   </a>
 </div>
 {% endif %}
 
+<!-- 🚀 AJAX Script -->
+{% if not user.profile.is_instructor %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const form = document.getElementById("course-filter-form");
+  const container = document.getElementById("course-container");
+  const sortButtons = document.querySelectorAll(".sort-btn");
+  const sortInput = document.getElementById("sort-input");
+
+  if (!form) return;
+
+  let timeout = null;
+
+  function fetchCourses() {
+    const params = new URLSearchParams(new FormData(form));
+
+    container.style.opacity = "0.4";
+
+    fetch("?" + params.toString(), {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+    .then(response => response.text())
+    .then(data => {
+      container.innerHTML = data;
+      container.style.opacity = "1";
+    });
+  }
+
+  form.addEventListener("input", function () {
+    clearTimeout(timeout);
+    timeout = setTimeout(fetchCourses, 300);
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    fetchCourses();
+  });
+
+  sortButtons.forEach(btn => {
+    btn.addEventListener("click", function () {
+      sortInput.value = this.dataset.sort;
+      fetchCourses();
+    });
+  });
+
+  // AJAX Pagination
+  container.addEventListener("click", function(e) {
+    if (e.target.closest(".page-link")) {
+      e.preventDefault();
+      const url = e.target.closest(".page-link").getAttribute("href");
+
+      container.style.opacity = "0.4";
+
+      fetch(url, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      })
+      .then(response => response.text())
+      .then(data => {
+        container.innerHTML = data;
+        container.style.opacity = "1";
+      });
+    }
+  });
+
+});
+</script>
+{% endif %}
+
+<style>
+.fade-wrapper {
+  transition: opacity 0.25s ease;
+}
+</style>
 
 {% endblock %}

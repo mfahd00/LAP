@@ -1,49 +1,314 @@
 {% extends 'base.html' %}
-{% block title %}Moderator Stats | LAP{% endblock %}
+{% block title %}Platform Analytics | LAP{% endblock %}
 
 {% block content %}
 <div class="container py-4">
+
+  <!-- Header -->
   <div class="text-center mb-5">
-    <h2 class="fw-bold section-heading mb-2">Moderator Stats</h2>
-    <p class="section-subheading mb-0">Overview of instructors and students on the platform</p>
+    <h2 class="fw-bold display-6 mb-2">Platform Analytics</h2>
+    <p class="text-muted">
+      Complete overview of system performance & growth
+    </p>
   </div>
 
-  <div class="row g-4 justify-content-center">
-    <div class="col-md-3 col-sm-6">
-      <div class="course-card text-center p-4 h-100">
-        <h5 class="fw-bold text-primary mb-1">Total Instructors</h5>
-        <p class="display-6 fw-bold mb-2">{{ total_instructors }}</p>
-        <a href="{% url 'instructors' %}" class="btn btn-outline-primary btn-sm mt-2">View All</a>
+  <!-- Filter -->
+  <div class="d-flex justify-content-center mb-5">
+    <form method="get" class="analytics-filter d-flex gap-2 align-items-center">
+      <select name="days" class="form-select shadow-sm">
+        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+      </select>
+      <button class="btn btn-primary px-4 shadow-sm">Apply</button>
+    </form>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-4 mb-5">
+
+    <div class="col-md-3">
+      <div class="analytics-card gradient-blue text-white">
+        <div>
+          <small>Total Instructors</small>
+          <h3 class="fw-bold">{{ total_instructors }}</h3>
+        </div>
+        <div class="icon">👨‍🏫</div>
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6">
-  <div class="course-card text-center p-4 h-100">
-    <h5 class="fw-bold text-success mb-1">Approved Instructors</h5>
-    <p class="display-6 fw-bold mb-2">{{ approved_instructors|default:0|default_if_none:0 }}</p>
-    <a href="{% url 'instructors' %}" class="btn btn-outline-success btn-sm mt-2">
-      View Approved
-    </a>
-  </div>
-</div>
+    <div class="col-md-3">
+      <div class="analytics-card gradient-green text-white">
+        <div>
+          <small>Approved</small>
+          <h3 class="fw-bold">{{ approved_instructors }}</h3>
+        </div>
+        <div class="icon">✅</div>
+      </div>
+    </div>
 
-<div class="col-md-3 col-sm-6">
-  <div class="course-card text-center p-4 h-100">
-    <h5 class="fw-bold text-warning mb-1">Pending Approvals</h5>
-    <p class="display-6 fw-bold mb-2">{{ pending_instructors|default:0|default_if_none:0 }}</p>
-    <a href="{% url 'instructors' %}" class="btn btn-outline-warning btn-sm mt-2">
-      View Pending
-    </a>
-  </div>
-</div>
+    <div class="col-md-3">
+      <div class="analytics-card gradient-warning text-dark">
+        <div>
+          <small>Pending</small>
+          <h3 class="fw-bold">{{ pending_instructors }}</h3>
+        </div>
+        <div class="icon">⏳</div>
+      </div>
+    </div>
 
-    <div class="col-md-3 col-sm-6">
-      <div class="course-card text-center p-4 h-100">
-        <h5 class="fw-bold text-info mb-1">Total Students</h5>
-        <p class="display-6 fw-bold mb-2">{{ total_students }}</p>
-        <p class=" small mt-2">No student list page yet</p>
+    <div class="col-md-3">
+      <div class="analytics-card gradient-info text-white">
+        <div>
+          <small>Total Students</small>
+          <h3 class="fw-bold">{{ total_students }}</h3>
+        </div>
+        <div class="icon">👨‍🎓</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Growth Cards -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-semibold text-muted mb-2">New Students ({{ days }} Days)</h6>
+        <h2 class="fw-bold text-success">{{ recent_students }}</h2>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-semibold text-muted mb-2">New Courses ({{ days }} Days)</h6>
+        <h2 class="fw-bold text-primary">{{ recent_courses }}</h2>
       </div>
     </div>
   </div>
+
+<!-- Unified Analytics Card (Old Layout Inside) -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="chart-card p-4">
+
+      <h5 class="fw-bold mb-4">📊 Platform Insights</h5>
+
+      <div class="row g-4">
+
+        <!-- Left Column -->
+        <div class="col-md-6">
+          <div class="p-3 h-100">
+            <h6 class="fw-bold mb-3">
+              🏢 Student Distribution by Department
+            </h6>
+            <canvas id="departmentChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-md-6 d-flex flex-column gap-4">
+
+          <!-- Platform Overview -->
+          <div class="p-3">
+            <h6 class="fw-bold mb-3">📊 Platform Overview</h6>
+            <canvas id="platformChart"></canvas>
+          </div>
+
+          <!-- Top Categories -->
+          {% if top_categories %}
+          <div class="p-3">
+            <h6 class="fw-bold mb-3">📚 Top Course Categories</h6>
+
+            {% for cat in top_categories %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">{{ cat.name }}</span>
+                <small class="text-muted">
+                  {{ cat.enrollments }}
+                </small>
+              </div>
+
+              <div class="progress mt-1" style="height: 8px;">
+                <div class="progress-bar bg-success"
+                     style="width: {{ cat.percentage }}%;">
+                </div>
+              </div>
+
+              <small class="text-muted">
+                {{ cat.percentage }}%
+              </small>
+            </div>
+            {% endfor %}
+
+          </div>
+          {% endif %}
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
 </div>
+
+<!-- Top 5 Ranking (Full Width) -->
+<div class="row g-4 mt-4">
+  <div class="col-12">
+    <div class="chart-card p-4">
+      <h5 class="fw-bold mb-4">🏆 Top 5 Courses by Enrollment</h5>
+
+      {% if top_courses %}
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Course</th>
+              <th>Enrollments</th>
+              <th>Popularity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in top_courses %}
+            <tr>
+              <td class="fw-bold text-primary">
+                {{ forloop.counter }}
+              </td>
+              <td class="fw-semibold">
+                {{ item.course.title }}
+              </td>
+              <td>
+                {{ item.enrollments }}
+              </td>
+              <td style="width:40%;">
+                <div class="progress" style="height: 8px;">
+                  <div class="progress-bar bg-success"
+                       style="width: {{ item.percentage }}%;">
+                  </div>
+                </div>
+                <small class="text-muted">
+                  {{ item.percentage }}%
+                </small>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted">No courses available.</p>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+  </div>
+
+
+
+<style>
+.analytics-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-radius: 16px;
+  transition: 0.3s ease;
+}
+
+.analytics-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.analytics-card .icon {
+  font-size: 28px;
+  opacity: 0.8;
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, #0d6efd, #0a58ca);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, #198754, #157347);
+}
+
+.gradient-warning {
+  background: linear-gradient(135deg, #ffc107, #ffcd39);
+}
+
+.gradient-info {
+  background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+}
+
+.glass-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(6px);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.chart-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  transition: 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+}
+
+.chart-card .col-md-6:first-child {
+  border-right: 1px solid rgba(0,0,0,0.05);
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const departmentChart = new Chart(document.getElementById('departmentChart'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ dept_labels|safe }},
+        datasets: [{
+            data: {{ dept_values|safe }},
+            backgroundColor: [
+                '#0d6efd',
+                '#198754',
+                '#ffc107',
+                '#dc3545',
+                '#0dcaf0',
+                '#6f42c1',
+                '#fd7e14'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+const platformChart = new Chart(document.getElementById('platformChart'), {
+    type: 'bar',
+    data: {
+        labels: ['Instructors', 'Students', 'Courses'],
+        datasets: [{
+            data: [{{ total_instructors }}, {{ total_students }}, {{ total_courses }}],
+            backgroundColor: ['#0d6efd', '#0dcaf0', '#198754']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+</script>
+
 {% endblock %}

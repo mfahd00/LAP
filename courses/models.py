@@ -12,7 +12,14 @@ class Profile(models.Model):
     is_moderator = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
-    
+    profile_pic = models.ImageField(upload_to='profiles/', blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    verification_document = models.FileField(
+    upload_to='instructor_docs/',
+    blank=True,
+    null=True
+    )
     YEAR_CHOICES = [
         (1, "Year 1"),
         (2, "Year 2"),
@@ -203,3 +210,14 @@ class Department(models.Model):
     def __str__(self):
         return self.name
 
+class LessonDownload(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    downloaded_at = models.DateTimeField(auto_now=True)
+    download_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('student', 'lesson')
+
+    def __str__(self):
+        return f"{self.student.username} - {self.lesson.title}"

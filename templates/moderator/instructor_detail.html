@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Instructor Details{% endblock %}
+
+{% block content %}
+<div class="container py-4 d-flex justify-content-center">
+  <div class="overlay-box w-100" style="max-width: 900px;">
+    <div class="p-4">
+
+      <h3 class="fw-bold mb-4 text-center section-heading">
+        Instructor Details
+      </h3>
+
+      <div class="mb-4">
+        <p><strong>Username:</strong> {{ instructor.username }}</p>
+        <p><strong>Email:</strong> {{ instructor.email }}</p>
+        <p>
+  <strong>Date Joined:</strong>
+  {{ instructor.date_joined|date:"M d, Y H:i" }}
+</p>
+        <p><strong>Department:</strong> 
+          {% if profile.department %}
+            {{ profile.department.name }}
+          {% else %}
+            —
+          {% endif %}
+        </p>
+        <p>
+          <strong>Status:</strong>
+          {% if profile.is_approved %}
+            <span class="badge bg-success">Approved</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+          {% endif %}
+        </p>
+      </div>
+
+      <h5 class="fw-semibold mb-3">Created Courses</h5>
+
+      {% if courses %}
+        <ul class="list-group mb-4">
+          {% for course in courses %}
+            <li class="list-group-item">
+              {{ course.title }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No courses created yet.</p>
+      {% endif %}
+
+      <div class="text-end">
+        <a href="{% url 'instructors' %}" class="btn btn-outline-secondary">
+          Back
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

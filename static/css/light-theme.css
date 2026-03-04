@@ -179,3 +179,20 @@ textarea:focus {
   color: #610202;                
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
+
+/* Sidebar override - prevent theme files from breaking sidebar */
+.sidebar {
+  width: 68px !important;
+  overflow: hidden !important;
+}
+
+.sidebar:hover {
+  width: 240px !important;
+}
+
+.theme-switch {
+  width: 46px !important;
+  height: 24px !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}

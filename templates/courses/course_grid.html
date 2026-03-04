@@ -1,0 +1,90 @@
+<div class="row g-4">
+  {% for course in page_obj %}
+  <div class="col-md-6 col-lg-4">
+    <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
+
+      <h5 class="fw-bold mb-2">
+        <a href="{% url 'course_detail' course.id %}"
+           class="text-decoration-none section-subheading">
+          {{ course.title }}
+        </a>
+      </h5>
+
+      <div class="mb-2 d-flex flex-wrap gap-2">
+        {% if course.category %}
+          <span class="badge badge-cat">{{ course.category.name }}</span>
+        {% endif %}
+
+        {% if course.difficulty == "beginner" %}
+          <span class="badge badge-beg">Beginner</span>
+        {% elif course.difficulty == "intermediate" %}
+          <span class="badge badge-int">Intermediate</span>
+        {% elif course.difficulty == "hard" %}
+          <span class="badge badge-hard">Advanced</span>
+        {% endif %}
+      </div>
+
+      <p class="small mb-1">
+        <strong>Instructor:</strong> {{ course.created_by.username }}
+      </p>
+
+      <p class="small mb-1">
+        <strong>Students:</strong> {{ course.num_students }}
+      </p>
+
+      <p class="small mb-3">
+        <strong>Duration:</strong> {{ course.duration_days }} days
+      </p>
+
+      <div class="mt-auto">
+        <a href="{% url 'course_detail' course.id %}"
+           class="btn btn-outline-info w-100 fw-semibold">
+          View Course
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% empty %}
+  <div class="text-center py-5">
+    <p class="text-muted mb-3">No courses found.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="mt-5">
+  <nav>
+    <ul class="pagination justify-content-center">
+
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link"
+           href="?page={{ page_obj.previous_page_number }}">
+           Previous
+        </a>
+      </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+      <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+        <a class="page-link"
+           href="?page={{ num }}">
+           {{ num }}
+        </a>
+      </li>
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+           href="?page={{ page_obj.next_page_number }}">
+           Next
+        </a>
+      </li>
+      {% endif %}
+
+    </ul>
+  </nav>
+</div>
+{% endif %}

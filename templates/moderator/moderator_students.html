@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Students | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4 d-flex justify-content-center">
+  <div class="overlay-box w-100" style="max-width: 1150px;">
+    <div class="p-4">
+
+      <h3 class="fw-bold mb-4 text-center section-heading">
+        Student Management
+      </h3>
+
+      <!-- 🔎 FILTER FORM -->
+      <form id="student-filter-form" method="GET" class="row g-3 mb-4">
+
+        <div class="col-md-3">
+          <input type="text" name="search"
+                 class="form-control"
+                 placeholder="Search name or email"
+                 value="{{ request.GET.search }}">
+        </div>
+
+        <div class="col-md-2">
+          <select name="department" class="form-select">
+            <option value="">All Departments</option>
+            {% for dept in departments %}
+            <option value="{{ dept.id }}"
+              {% if request.GET.department == dept.id|stringformat:"s" %}selected{% endif %}>
+              {{ dept.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <select name="enrollment" class="form-select">
+            <option value="">All</option>
+            <option value="active">With Enrollments</option>
+            <option value="none">No Enrollments</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <select name="sort" class="form-select">
+            <option value="date_joined">Newest</option>
+            <option value="name">Name</option>
+            <option value="enrollments">Most Enrollments</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100">Apply</button>
+        </div>
+
+        <div class="col-md-1 d-grid">
+          <a href="{% url 'moderator_students' %}" class="btn btn-outline-secondary">
+            Reset
+          </a>
+        </div>
+
+      </form>
+
+      <!-- Export -->
+      <a href="{% url 'export_students_csv' %}?{{ request.GET.urlencode }}"
+         class="btn btn-success mb-3">
+         ⬇ Export CSV
+      </a>
+
+      <!-- 📦 AJAX TABLE -->
+      <div id="student-container" class="fade-wrapper">
+        {% include "moderator/student_table.html" %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.table-gradient {
+  background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
+}
+
+.overlay-box {
+  background: var(--bs-body-bg);
+  border-radius: 1rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
+}
+
+.fade-wrapper {
+  transition: opacity 0.25s ease;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const form = document.getElementById("student-filter-form");
+  const container = document.getElementById("student-container");
+
+  let timeout = null;
+
+  function fetchData() {
+    const params = new URLSearchParams(new FormData(form));
+
+    container.style.opacity = "0.4";
+
+    fetch("?" + params.toString(), {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(res => res.text())
+    .then(html => {
+      container.innerHTML = html;
+      container.style.opacity = "1";
+    });
+  }
+
+  form.addEventListener("input", function () {
+    clearTimeout(timeout);
+    timeout = setTimeout(fetchData, 300);
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    fetchData();
+  });
+
+});
+</script>
+
+{% endblock %}

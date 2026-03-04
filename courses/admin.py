@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import Course, Lesson, Enrollment, Category, Profile, Department
 
+admin.site.site_header = "LAP Control Panel"
+admin.site.site_title = "LAP Admin"
+admin.site.index_title = "Welcome to LAP Administration"
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_by', 'created_at', 'category')  

@@ -1,64 +1,70 @@
 {% extends 'base.html' %}
-{% block title %}Instructors | LAP{% endblock %}
+{% block title %}Manage Instructors | LAP{% endblock %}
 
 {% block content %}
 <div class="container py-4 d-flex justify-content-center">
-  <div class="overlay-box w-100" style="max-width: 1050px;">
+  <div class="overlay-box w-100" style="max-width: 1150px;">
     <div class="p-4">
-      <h3 class="fw-bold mb-4 text-center section-heading">Instructors</h3>
 
-      {% if instructors %}
-      <div class="table-responsive">
-        <table class="table align-middle text-center mb-0">
-          <thead class="table-gradient text-white">
-            <tr>
-              <th>#</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Department</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for profile in instructors %}
-            <tr>
-              <td>{{ forloop.counter }}</td>
-              <td>{{ profile.user.username }}</td>
-              <td>{{ profile.user.email }}</td>
-              <td>
-                {% if profile.department %}
-                  {{ profile.department.name }}
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if profile.is_approved %}
-                  <span class="badge bg-success">Approved</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">Pending</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if profile.is_approved %}
-                  <a href="{% url 'remove_instructor' profile.user.id %}" class="btn btn-danger btn-sm px-3">
-                    Remove
-                  </a>
-                {% else %}
-                  <a href="{% url 'approve_instructor' profile.user.id %}" class="btn btn-success btn-sm px-3">
-                    Approve
-                  </a>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <h3 class="fw-bold mb-4 text-center section-heading">
+        Instructor Management
+      </h3>
+
+      <!-- 🔎 FILTERS -->
+      <form id="moderator-filter-form" method="GET" class="mb-4">
+        <div class="row g-3 align-items-end">
+
+          <div class="col-md-3">
+            <input type="text"
+                   name="search"
+                   value="{{ request.GET.search }}"
+                   class="form-control"
+                   placeholder="Search username/email">
+          </div>
+
+          <div class="col-md-2">
+            <select name="status" class="form-select">
+              <option value="">All Status</option>
+              <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Approved</option>
+              <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <select name="department" class="form-select">
+              <option value="">All Departments</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}"
+                {% if request.GET.department == dept.id|stringformat:"s" %}selected{% endif %}>
+                {{ dept.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <select name="sort" class="form-select">
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
+              <option value="department">Department</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 d-grid">
+            <button class="btn btn-info fw-semibold">Apply</button>
+          </div>
+
+        </div>
+      </form>
+
+      <!-- 📦 TABLE -->
+      <div id="moderator-container" class="fade-wrapper">
+        {% include "moderator/instructor_table.html" %}
       </div>
-      {% else %}
-      <p class="text-center text-muted mt-3">No instructors found.</p>
-      {% endif %}
+
     </div>
   </div>
 </div>
@@ -67,13 +73,67 @@
 .table-gradient {
   background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
 }
-.table {
+.overlay-box {
+  background: var(--bs-body-bg);
   border-radius: 1rem;
-  overflow: hidden;
+  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
 }
 .table tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  transition: 0.2s;
+  background-color: rgba(0,0,0,0.05);
+}
+.fade-wrapper {
+  transition: opacity 0.25s ease;
+}
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 </style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const form = document.getElementById("moderator-filter-form");
+  const container = document.getElementById("moderator-container");
+
+  let timeout = null;
+
+  function fetchData() {
+    const params = new URLSearchParams(new FormData(form));
+
+    container.style.opacity = "0.4";
+
+    fetch("?" + params.toString(), {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(res => res.text())
+    .then(html => {
+      container.innerHTML = html;
+      container.style.opacity = "1";
+    });
+  }
+
+  form.addEventListener("input", function () {
+    clearTimeout(timeout);
+    timeout = setTimeout(fetchData, 300);
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    fetchData();
+  });
+
+  container.addEventListener("click", function(e) {
+    if (e.target.classList.contains("ajax-action")) {
+      const url = e.target.dataset.url;
+      fetch(url, {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      }).then(() => fetchData());
+    }
+  });
+
+});
+</script>
+
 {% endblock %}

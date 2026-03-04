@@ -14,7 +14,7 @@
     </div>
     {% endif %}
 
-    <form method="post" id="instructorRegistrationForm" novalidate>
+    <form method="post" enctype="multipart/form-data" id="instructorRegistrationForm" novalidate>
       {% csrf_token %}
       
       <div class="mb-3">
@@ -30,6 +30,14 @@
       <div class="mb-3">
         <label class="form-label fw-medium">Email</label>
         {{ form.email|add_class:"form-control" }}
+      </div>
+      
+      <div class="mb-3">
+        <label class="form-label fw-medium">Verification Document</label>
+        {{ form.verification_document|add_class:"form-control" }}
+        <small class="text-muted">
+          Upload ID card / appointment letter (PDF or Image).
+        </small>
       </div>
 
       <div class="mb-3">

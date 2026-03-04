@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -135,5 +136,46 @@ LOGIN_URL = '/login/'
 
 import os
 
-MEDIA_URL = '/submissions/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'submissions')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+JAZZMIN_SETTINGS = {
+    "site_title": "LAP Admin",
+    "site_header": "LAP Control Panel",
+    "site_brand": "LAP",
+    "welcome_sign": "Welcome to LAP Administration",
+
+    "site_logo": "images/logo.png",
+    "login_logo": "images/logo.png",
+
+    "show_sidebar": True,
+    "navigation_expanded": True,
+
+    "icons": {
+        "auth.user": "fas fa-user",
+        "courses.Course": "fas fa-book",
+        "courses.Assignment": "fas fa-tasks",
+        "courses.Enrollment": "fas fa-user-check",
+        "courses.Submission": "fas fa-file-upload",
+        "courses.Profile": "fas fa-id-badge",
+        "courses.Announcement": "fas fa-bullhorn",
+        "custom_css": "admin/custom.css",
+    },
+}
+JAZZMIN_UI_TWEAKS = {
+    "navbar": "navbar-dark",
+    "sidebar": "sidebar-dark-primary",
+    "accent": "accent-indigo",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-outline-primary",
+    }
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'fahadmuhammed375@gmail.com'
+EMAIL_HOST_PASSWORD = 'vqdk amsd cghf cque'

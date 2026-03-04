@@ -9,147 +9,171 @@
 
     <h2 class="fw-bold text-center mb-4">Welcome Back</h2>
 
-    <ul class="nav nav-tabs justify-content-between mb-4 border-0 w-100" id="loginTab" role="tablist" style="gap: 10px; max-width: 500px; margin: 0 auto;">
-  <li class="nav-item flex-fill" role="presentation">
-    <button
-      class="nav-link w-100 fw-semibold {% if show_tab == 'student' or not show_tab %}active{% endif %}"
-      id="student-tab"
-      data-bs-toggle="tab"
-      data-bs-target="#student"
-      type="button"
-      role="tab"
-      aria-controls="student"
-      aria-selected="true"
-    >
-      👨‍🎓 Student
-    </button>
-  </li>
-  <li class="nav-item flex-fill" role="presentation">
-    <button
-      class="nav-link w-100 fw-semibold {% if show_tab == 'instructor' %}active{% endif %}"
-      id="instructor-tab"
-      data-bs-toggle="tab"
-      data-bs-target="#instructor"
-      type="button"
-      role="tab"
-      aria-controls="instructor"
-      aria-selected="false"
-    >
-      👩‍🏫 Instructor
-    </button>
-  </li>
-  <li class="nav-item flex-fill" role="presentation">
-    <button
-      class="nav-link w-100 fw-semibold {% if show_tab == 'moderator' %}active{% endif %}"
-      id="moderator-tab"
-      data-bs-toggle="tab"
-      data-bs-target="#moderator"
-      type="button"
-      role="tab"
-      aria-controls="moderator"
-      aria-selected="false"
-    >
-      👨‍💼 Moderator
-    </button>
-  </li>
-</ul>
-
+    <ul class="nav nav-tabs justify-content-between mb-4 border-0 w-100" style="gap:10px;">
+      <li class="nav-item flex-fill">
+        <button class="nav-link w-100 fw-semibold {% if show_tab == 'student' or not show_tab %}active{% endif %}"
+                data-bs-toggle="tab" data-bs-target="#student" type="button">
+          👨‍🎓 Student
+        </button>
+      </li>
+      <li class="nav-item flex-fill">
+        <button class="nav-link w-100 fw-semibold {% if show_tab == 'instructor' %}active{% endif %}"
+                data-bs-toggle="tab" data-bs-target="#instructor" type="button">
+          👩‍🏫 Instructor
+        </button>
+      </li>
+      <li class="nav-item flex-fill">
+        <button class="nav-link w-100 fw-semibold {% if show_tab == 'moderator' %}active{% endif %}"
+                data-bs-toggle="tab" data-bs-target="#moderator" type="button">
+          👨‍💼 Moderator
+        </button>
+      </li>
+    </ul>
 
     <div class="tab-content mt-3">
-      <!-- Student Login -->
-      <div class="tab-pane fade {% if show_tab == 'student' or not show_tab %}show active{% endif %}" id="student" role="tabpanel">
+
+      <!-- Student -->
+      <div class="tab-pane fade {% if show_tab == 'student' or not show_tab %}show active{% endif %}" id="student">
         {% if student_error %}
           <div class="alert alert-warning small">{{ student_error }}</div>
         {% endif %}
         <form method="POST" action="{% url 'login_student' %}">
           {% csrf_token %}
           <div class="mb-3">
-            <label for="student_username" class="form-label fw-medium">Username</label>
-            <input type="text" class="form-control" id="student_username" name="username" placeholder="Enter your username" required>
+            <label class="form-label fw-medium">Username</label>
+            <input type="text" class="form-control" name="username" required>
           </div>
-          <div class="mb-4">
-            <label for="student_password" class="form-label fw-medium">Password</label>
-            <input type="password" class="form-control" id="student_password" name="password" placeholder="••••••••" required>
+          <div class="mb-2 position-relative">
+            <label class="form-label fw-medium">Password</label>
+            <input type="password" class="form-control pe-5 password-field" name="password" required>
+            <span class="toggle-password">👁️</span>
           </div>
+
+          <div class="text-end mb-3">
+            <a href="{% url 'password_reset' %}" class="small text-decoration-none">
+              Forgot Password?
+            </a>
+          </div>
+
           <button type="submit" class="btn w-100 py-2">Login as Student</button>
         </form>
       </div>
 
-      <!-- Instructor Login -->
-      <div class="tab-pane fade {% if show_tab == 'instructor' %}show active{% endif %}" id="instructor" role="tabpanel">
+      <!-- Instructor -->
+      <div class="tab-pane fade {% if show_tab == 'instructor' %}show active{% endif %}" id="instructor">
         {% if instructor_error %}
           <div class="alert alert-warning small">{{ instructor_error }}</div>
         {% endif %}
         <form method="POST" action="{% url 'login_instructor' %}">
           {% csrf_token %}
           <div class="mb-3">
-            <label for="instructor_username" class="form-label fw-medium">Username</label>
-            <input type="text" class="form-control" id="instructor_username" name="username" placeholder="Enter your username" required>
+            <label class="form-label fw-medium">Username</label>
+            <input type="text" class="form-control" name="username" required>
           </div>
-          <div class="mb-4">
-            <label for="instructor_password" class="form-label fw-medium">Password</label>
-            <input type="password" class="form-control" id="instructor_password" name="password" placeholder="••••••••" required>
+          <div class="mb-2 position-relative">
+            <label class="form-label fw-medium">Password</label>
+            <input type="password" class="form-control pe-5 password-field" name="password" required>
+            <span class="toggle-password">👁️</span>
           </div>
+
+          <div class="text-end mb-3">
+            <a href="{% url 'password_reset' %}" class="small text-decoration-none">
+              Forgot Password?
+            </a>
+          </div>
+
           <button type="submit" class="btn w-100 py-2">Login as Instructor</button>
         </form>
       </div>
 
-      <!-- Moderator Login -->
-      <div class="tab-pane fade {% if show_tab == 'moderator' %}show active{% endif %}" id="moderator" role="tabpanel">
+      <!-- Moderator -->
+      <div class="tab-pane fade {% if show_tab == 'moderator' %}show active{% endif %}" id="moderator">
         {% if moderator_error %}
           <div class="alert alert-warning small">{{ moderator_error }}</div>
         {% endif %}
         <form method="POST" action="{% url 'login_moderator' %}">
           {% csrf_token %}
           <div class="mb-3">
-            <label for="moderator_username" class="form-label fw-medium">Username</label>
-            <input type="text" class="form-control" id="moderator_username" name="username" placeholder="Enter your username" required>
+            <label class="form-label fw-medium">Username</label>
+            <input type="text" class="form-control" name="username" required>
           </div>
-          <div class="mb-4">
-            <label for="moderator_password" class="form-label fw-medium">Password</label>
-            <input type="password" class="form-control" id="moderator_password" name="password" placeholder="••••••••" required>
+          <div class="mb-2 position-relative">
+            <label class="form-label fw-medium">Password</label>
+            <input type="password" class="form-control pe-5 password-field" name="password" required>
+            <span class="toggle-password">👁️</span>
           </div>
+
+          <div class="text-end mb-3">
+            <a href="{% url 'password_reset' %}" class="small text-decoration-none">
+              Forgot Password?
+            </a>
+          </div>
+
           <button type="submit" class="btn w-100 py-2">Login as Moderator</button>
         </form>
       </div>
+
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.querySelectorAll(".toggle-password").forEach(function(toggle) {
+    toggle.addEventListener("click", function() {
+      const input = this.previousElementSibling;
+      if (input.type === "password") {
+        input.type = "text";
+        this.textContent = "🙈";
+      } else {
+        input.type = "password";
+        this.textContent = "👁️";
+      }
+    });
+  });
+</script>
 
 <style>
-  .nav-tabs .nav-link {
-    border: none;
-    color: var(--bs-body-color) !important;
-    background: transparent;
-    font-weight: 600;
-    transition: all 0.3s ease;
+  .toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 38px;
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
   }
-  .nav-tabs .nav-link.active {
-    background: linear-gradient(135deg, #0a58ca, #084bb5);
-    color: #fff !important;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(26, 74, 140, 0.25);
-  }
+
   .form-control {
     border-radius: 8px;
-    transition: box-shadow 0.2s ease;
   }
-  .form-control:focus {
-    border-color: #2a7df5;
-    box-shadow: 0 0 8px rgba(42, 125, 245, 0.5);
-  }
+
   .btn {
     background: linear-gradient(135deg, #0a58ca, #084bb5);
     color: #fff;
-    border: none;
     border-radius: 10px;
-    transition: 0.3s;
   }
+
   .btn:hover {
     background: linear-gradient(135deg, #2a7df5, #1a4a8c);
-    box-shadow: 0 3px 12px rgba(42, 125, 245, 0.4);
   }
+  .nav-tabs .nav-link {
+  border: none;
+  background: #f8f9fa;
+  color: #333 !important;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  background: #e9ecef;
+  color: #000 !important;
+}
+
+.nav-tabs .nav-link.active {
+  background: linear-gradient(135deg, #0a58ca, #084bb5);
+  color: #fff !important;
+  box-shadow: 0 3px 12px rgba(26, 74, 140, 0.25);
+}
 </style>
+
 {% endblock %}
