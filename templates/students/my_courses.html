@@ -1,52 +1,136 @@
 {% extends "base.html" %}
+{% block title %}My Courses | LAP{% endblock %}
+
 {% block content %}
 
 <div class="container py-5">
-  <h3 class="fw-bold mb-4 text-center section-heading">
-    My Enrolled Courses
-  </h3>
 
-  {% if enrollments %}
-    <div class="row g-4">
-      {% for enrollment in enrollments %}
-        <div class="col-md-4">
-          <div class="course-card h-100">
+<h3 class="fw-bold text-center mb-5 section-heading">
+My Enrolled Courses
+</h3>
 
-            <div class="course-card-body">
-              <h5 class="course-title">
-                {{ enrollment.course.title }}
-              </h5>
+{% if enrollments %}
 
-              <p class="text-muted small mb-2">
-                Enrolled on {{ enrollment.enrolled_at|date:"M d, Y" }}
-              </p>
+<div class="row g-4">
 
-              <div class="progress mb-3" style="height: 8px;">
-                <div class="progress-bar"
-                     role="progressbar"
-                     style="width: {{ enrollment.progress_percentage }}%;">
-                </div>
-              </div>
+{% for enrollment in enrollments %}
 
-              <p class="small fw-semibold mb-3">
-                {{ enrollment.progress_percentage }}% Completed
-              </p>
+<div class="col-md-4">
 
-              <a href="{% url 'course_detail' enrollment.course.id %}" 
-                 class="btn btn-gradient w-100">
-                 Continue Learning
-              </a>
-            </div>
+<div class="course-card h-100 d-flex flex-column">
 
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="text-center py-5">
-      <p class="text-muted">You have not enrolled in any courses yet.</p>
-    </div>
-  {% endif %}
+<div class="course-card-body d-flex flex-column">
+
+<h5 class="course-title mb-2">
+{{ enrollment.course.title }}
+</h5>
+
+<p class="text-muted small mb-3">
+Enrolled on {{ enrollment.enrolled_at|date:"M d, Y" }}
+</p>
+
+<div class="progress mb-2" style="height:8px;">
+
+<div class="progress-bar
+{% if enrollment.progress_percentage < 40 %}
+bg-danger
+{% elif enrollment.progress_percentage < 75 %}
+bg-warning
+{% else %}
+bg-success
+{% endif %}
+"
+style="width: {{ enrollment.progress_percentage }}%;">
+</div>
+
+</div>
+
+<p class="small fw-semibold mb-3">
+{{ enrollment.progress_percentage }}% Completed
+</p>
+
+{% if enrollment.progress_percentage == 100 %}
+
+<div class="alert alert-success py-2 small mb-3">
+
+<strong>Course Completed 🎓</strong>
+
+{% if enrollment.course_result and enrollment.course_result.graded %}
+
+<br>
+Final Score:
+<strong>{{ enrollment.course_result.total_marks }}/100</strong>
+
+{% else %}
+
+<br>
+Awaiting instructor result.
+
+{% endif %}
+
+</div>
+
+{% endif %}
+
+<div class="mt-auto">
+
+{% if enrollment.course_result and enrollment.course_result.graded %}
+
+<a href="{% url 'course_detail' enrollment.course.id %}"
+class="btn btn-outline-primary w-100 mb-2">
+
+View Course
+
+</a>
+
+<a href="{% url 'download_certificate' enrollment.id %}"
+class="btn btn-outline-success w-100">
+
+<i class="bi bi-award"></i> Download Certificate
+
+</a>
+
+{% else %}
+
+<a href="{% url 'course_detail' enrollment.course.id %}"
+class="btn btn-gradient w-100 mb-2">
+
+Continue Learning
+
+</a>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="text-center py-5">
+
+<i class="bi bi-journal-x fs-1 d-block mb-3 opacity-50"></i>
+
+<p class="text-muted mb-3">
+You have not enrolled in any courses yet.
+</p>
+
+<a href="{% url 'course_list' %}" class="btn btn-outline-primary">
+Browse Courses
+</a>
+
+</div>
+
+{% endif %}
+
 </div>
 
 {% endblock %}

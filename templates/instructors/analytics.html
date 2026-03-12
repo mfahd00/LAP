@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor Analytics | LAP{% endblock %}
+
+{% block content %}
+
+<div class="container py-4 d-flex justify-content-center">
+  <div class="overlay-box w-100" style="max-width:1100px;">
+
+```
+<div class="p-4">
+
+  <h3 class="fw-bold mb-4 text-center section-heading">
+    📊 Instructor Analytics
+  </h3>
+
+  <!-- Stats Cards -->
+  <div class="row g-4">
+
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Total Courses</h6>
+          <h3 class="fw-bold">{{ total_courses }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Total Students</h6>
+          <h3 class="fw-bold">{{ total_students }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Assignments</h6>
+          <h3 class="fw-bold">{{ total_assignments }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Avg Completion</h6>
+          <h3 class="fw-bold">{{ avg_completion }}%</h3>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Submission Status Cards -->
+  <div class="row g-4 mt-3">
+
+    <div class="col-md-4">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Approved Submissions</h6>
+          <h4 class="fw-bold text-success">{{ approved_submissions }}</h4>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Rejected Submissions</h6>
+          <h4 class="fw-bold text-danger">{{ rejected_submissions }}</h4>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm text-center h-100">
+        <div class="card-body">
+          <h6 class="text-muted">Pending Review</h6>
+          <h4 class="fw-bold text-warning">{{ pending_submissions }}</h4>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-4 mt-4">
+
+    <!-- Students per Course -->
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <h6 class="fw-semibold mb-3">
+            📊 Students per Course
+          </h6>
+
+          <canvas id="courseChart" style="height:300px;"></canvas>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Submission Status -->
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <h6 class="fw-semibold mb-3">
+            🍩 Submission Status
+          </h6>
+
+          <canvas id="submissionChart" style="height:300px;"></canvas>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Enrollment Growth Chart -->
+  <div class="row g-4 mt-4">
+
+    <div class="col-12">
+
+      <div class="card shadow-sm">
+
+        <div class="card-body">
+
+          <h6 class="fw-semibold mb-3">
+            📈 Student Enrollment Growth
+          </h6>
+
+          <canvas id="growthChart" style="height:320px;"></canvas>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Popular Course -->
+  {% if popular_course %}
+
+  <div class="card shadow-sm mt-4">
+
+    <div class="card-body text-center">
+
+      <h5 class="fw-bold mb-2">
+        🔥 Most Popular Course
+      </h5>
+
+      <p class="mb-1">{{ popular_course.title }}</p>
+
+      <p class="text-muted small">
+        {{ popular_course.total_students }} students enrolled
+      </p>
+
+    </div>
+
+  </div>
+
+  {% endif %}
+
+</div>
+```
+
+  </div>
+</div>
+
+<!-- Chart.js -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+// =======================
+// Students per Course
+// =======================
+
+const courseLabels = {{ course_labels|safe }};
+const courseStudents = {{ course_students|safe }};
+
+new Chart(
+document.getElementById("courseChart"),
+{
+type: "bar",
+
+data: {
+labels: courseLabels,
+
+datasets: [{
+label: "Students Enrolled",
+data: courseStudents,
+backgroundColor: "rgba(54,162,235,0.8)",
+borderColor: "rgba(54,162,235,1)",
+borderWidth: 1,
+borderRadius: 8,
+barThickness: 40
+}]
+},
+
+options: {
+responsive:true,
+
+plugins:{
+legend:{display:false}
+},
+
+scales:{
+x:{
+grid:{display:false},
+ticks:{maxRotation:25,minRotation:25}
+},
+
+y:{
+beginAtZero:true,
+grid:{color:"rgba(0,0,0,0.05)"},
+ticks:{stepSize:1}
+}
+}
+}
+}
+);
+
+
+// =======================
+// Submission Status
+// =======================
+
+new Chart(
+document.getElementById("submissionChart"),
+{
+type:"doughnut",
+
+data:{
+labels:["Approved","Rejected","Pending"],
+
+datasets:[{
+data:[
+{{ approved_submissions }},
+{{ rejected_submissions }},
+{{ pending_submissions }}
+],
+
+backgroundColor:[
+"#22c55e",
+"#ef4444",
+"#f59e0b"
+],
+
+borderWidth:0
+}]
+},
+
+options:{
+responsive:true,
+cutout:"65%",
+
+plugins:{
+legend:{position:"bottom"}
+}
+}
+}
+);
+
+
+// =======================
+// Enrollment Growth
+// =======================
+
+const growthLabels = {{ growth_labels|safe }};
+const growthCounts = {{ growth_counts|safe }};
+
+new Chart(
+document.getElementById("growthChart"),
+{
+type:"line",
+
+data:{
+labels:growthLabels,
+
+datasets:[{
+label:"New Enrollments",
+data:growthCounts,
+borderColor:"#3b82f6",
+backgroundColor:"rgba(59,130,246,0.15)",
+fill:true,
+tension:0.4,
+pointRadius:4,
+pointBackgroundColor:"#3b82f6"
+}]
+},
+
+options:{
+responsive:true,
+
+plugins:{
+legend:{display:false}
+},
+
+scales:{
+x:{grid:{display:false}},
+y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"}}
+}
+}
+}
+);
+
+</script>
+
+{% endblock %}

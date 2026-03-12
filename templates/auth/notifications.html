@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications | LAP{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+  <div class="text-center mb-4">
+    <h3 class="fw-bold section-heading">Notifications</h3>
+    <p class="text-muted small mb-0">
+      Stay updated with recent activity
+    </p>
+  </div>
+
+  {% if notifications %}
+
+  <div class="list-group shadow-sm">
+
+    {% for n in notifications %}
+
+    <a href="{{ n.link|default:'#' }}"
+       class="list-group-item list-group-item-action d-flex justify-content-between align-items-start
+       {% if not n.is_read %}list-group-item-primary{% endif %}">
+
+      <div class="me-auto">
+
+        <div class="fw-semibold">
+          {{ n.message }}
+        </div>
+
+        <div class="small text-muted mt-1">
+          {{ n.created_at|timesince }} ago
+        </div>
+
+      </div>
+
+      {% if not n.is_read %}
+      <span class="badge bg-primary">New</span>
+      {% endif %}
+
+    </a>
+
+    {% endfor %}
+
+  </div>
+
+  {% else %}
+
+  <div class="text-center py-5 overlay-box">
+
+    <i class="bi bi-bell-slash fs-1 mb-3 d-block opacity-75"></i>
+
+    <p class="mb-1">No notifications yet</p>
+
+    <p class="text-muted small">
+      You’ll see updates about courses, assignments and announcements here.
+    </p>
+
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}

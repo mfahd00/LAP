@@ -84,11 +84,38 @@ class Lesson(models.Model):
         return self.title
 
 class Enrollment(models.Model):
-    student = models.ForeignKey(User, related_name='enrollments', on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    completed_lessons = models.ManyToManyField(Lesson, blank=True)
-    enrolled_at = models.DateTimeField(default=timezone.now)
-    is_approved = models.BooleanField(default=False)
+
+    student = models.ForeignKey(
+        User,
+        related_name="enrollments",
+        on_delete=models.CASCADE
+    )
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE
+    )
+
+    completed_lessons = models.ManyToManyField(
+        Lesson,
+        blank=True
+    )
+
+    enrolled_at = models.DateTimeField(
+        default=timezone.now
+    )
+
+    is_approved = models.BooleanField(
+        default=False
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "course"],
+                name="unique_student_course_enrollment"
+            )
+        ]
 
     def __str__(self):
         return f"{self.student.username} - {self.course.title}"
@@ -102,16 +129,34 @@ class Enrollment(models.Model):
 
     @property
     def progress_percentage(self):
-        total_assignments = self.course.assignments.count()
+
+        assignments = self.course.assignments.all()
+        total_assignments = assignments.count()
 
         if total_assignments == 0:
             return 0
 
-        approved_assignments = self.submissions.filter(
-            status="approved"
-        ).count()
+        completed = 0
 
-        return int((approved_assignments / total_assignments) * 100)
+        for assignment in assignments:
+
+            submissions = Submission.objects.filter(
+                assignment=assignment,
+                enrollment=self
+            ).order_by("-submitted_at")
+
+            latest = submissions.first()
+
+            if not latest:
+                continue
+
+            if latest.status == "approved":
+                completed += 1
+
+            elif submissions.count() >= 5:
+                completed += 1
+
+        return int((completed / total_assignments) * 100)
 
     @property
     def is_expired(self):
@@ -119,14 +164,18 @@ class Enrollment(models.Model):
 
     @property
     def average_mark(self):
-        approved = self.submissions.filter(status="approved", marks__isnull=False)
+
+        approved = self.submissions.filter(
+            status="approved",
+            marks__isnull=False
+        )
 
         if not approved.exists():
             return 0
 
         total = sum(sub.marks for sub in approved)
-        return round(total / approved.count(), 2)
 
+        return round(total / approved.count(), 2)
 
 
 class Assignment(models.Model):
@@ -160,6 +209,7 @@ class Submission(models.Model):
         on_delete=models.CASCADE
     )
 
+    attempt = models.IntegerField(default=1)
     enrollment = models.ForeignKey(
     Enrollment,
     related_name='submissions',
@@ -221,3 +271,42 @@ class LessonDownload(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.lesson.title}"
+
+class CourseResult(models.Model):
+
+    enrollment = models.OneToOneField(
+        Enrollment,
+        on_delete=models.CASCADE,
+        related_name="course_result"
+    )
+
+    total_marks = models.PositiveIntegerField(null=True, blank=True)
+    graded = models.BooleanField(default=False)
+
+    graded_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.enrollment.student.username} - {self.enrollment.course.title}"
+
+class Notification(models.Model):
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+
+    message = models.CharField(max_length=255)
+
+    link = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    is_read = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.message}"

@@ -426,6 +426,42 @@
       .sidebar-overlay.active {
         display: block;
       }
+
+      .notification-link{
+        display:flex;
+        align-items:center;
+        gap:14px;
+        }
+
+        .notification-icon{
+        position:relative;
+        width:22px;
+        text-align:center;
+        }
+
+        .notification-badge{
+        position:absolute;
+        top:-6px;
+        right:-8px;
+        background:#dc3545;
+        color:#fff;
+        font-size:0.65rem;
+        padding:2px 6px;
+        border-radius:50px;
+        min-width:16px;
+        text-align:center;
+        font-weight:600;
+        opacity:1 !important;
+        }
+        .badge{
+      animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse{
+      0%{transform:scale(1);}
+      50%{transform:scale(1.1);}
+      100%{transform:scale(1);}
+      }
     </style>
   </head>
 
@@ -492,27 +528,39 @@
             <a class="sidebar-link" href="{% url 'global_announcement_list' %}">
               <i class="bi bi-megaphone"></i><span>Announcements</span>
             </a>
+            <a class="sidebar-link" href="{% url 'instructor_analytics' %}">
+  <i class="bi bi-bar-chart"></i><span>Analytics</span>
+</a>
 
           {% else %}
-            <a class="sidebar-link" href="{% url 'dashboard' %}">
-              <i class="bi bi-speedometer2"></i><span>Dashboard</span>
-            </a>
-            <a class="sidebar-link" href="{% url 'course_list' %}">
-              <i class="bi bi-journals"></i><span>Courses</span>
-            </a>
-            <a class="sidebar-link" href="{% url 'my_enrolled_courses' %}">
-              <i class="bi bi-mortarboard"></i><span>My Courses</span>
-            </a>
-            <a class="sidebar-link" href="{% url 'student_assignments' %}">
-              <i class="bi bi-clipboard-check"></i><span>Assignments</span>
-            </a>
-            <a class="sidebar-link" href="{% url 'global_announcement_list' %}">
-              <i class="bi bi-megaphone"></i><span>Announcements</span>
-            </a>
-            <a class="sidebar-link" href="{% url 'student_downloads' %}">
-              <i class="bi bi-download"></i><span>Downloads</span>
-            </a>
-          {% endif %}
+<a class="sidebar-link" href="{% url 'dashboard' %}">
+  <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+</a>
+
+<a class="sidebar-link" href="{% url 'course_list' %}">
+  <i class="bi bi-journals"></i><span>Courses</span>
+</a>
+
+<a class="sidebar-link" href="{% url 'leaderboard' %}">
+  <i class="bi bi-trophy"></i><span>Leaderboard</span>
+</a>
+
+<a class="sidebar-link" href="{% url 'my_enrolled_courses' %}">
+  <i class="bi bi-mortarboard"></i><span>My Courses</span>
+</a>
+
+<a class="sidebar-link" href="{% url 'student_assignments' %}">
+  <i class="bi bi-clipboard-check"></i><span>Assignments</span>
+</a>
+
+<a class="sidebar-link" href="{% url 'global_announcement_list' %}">
+  <i class="bi bi-megaphone"></i><span>Announcements</span>
+</a>
+
+<a class="sidebar-link" href="{% url 'student_downloads' %}">
+  <i class="bi bi-download"></i><span>Downloads</span>
+</a>
+{% endif %}
 
         {% else %}
 
@@ -538,7 +586,28 @@
           </div>
           <span class="theme-icon" id="theme-icon">🌙</span>
         </div>
+        <!-- Notifications -->
+{% if user.is_authenticated %}
+<a href="{% url 'notifications' %}" class="sidebar-link notification-link">
 
+  <div class="notification-icon">
+
+    <i class="bi bi-bell"></i>
+
+    {% if notification_unread_count %}
+    <span class="notification-badge">
+
+        {{ notification_unread_count }}
+
+    </span>
+    {% endif %}
+
+  </div>
+
+  <span>Notifications</span>
+
+</a>
+{% endif %}
         {% if user.is_authenticated %}
 
           <!-- Profile -->

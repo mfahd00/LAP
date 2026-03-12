@@ -69,6 +69,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'courses.context_processors.categories', 
+                'courses.context_processors.notification_count',
         ],
     },
     },
@@ -138,7 +139,6 @@ import os
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 JAZZMIN_SETTINGS = {
     "site_title": "LAP Admin",

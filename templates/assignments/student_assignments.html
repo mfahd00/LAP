@@ -18,174 +18,231 @@
     <h4 class="warning mb-3">⏳ Pending Assignments</h4>
 
     {% if pending_assignments %}
-      <div class="row g-4">
-        {% for item in pending_assignments %}
-          <div class="col-md-6 col-lg-4">
-            <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
+    <div class="row g-4">
 
-              <h5 class="fw-bold mb-2 section-heading">
-                {{ item.assignment.title }}
-              </h5>
+      {% for item in pending_assignments %}
+      <div class="col-md-6 col-lg-4">
 
-              <p class="small mb-1">
-                <strong>Course:</strong> {{ item.assignment.course.title }}
-              </p>
+        <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
 
-              <p class="small mb-2">
-                {{ item.assignment.description|truncatewords:20 }}
-              </p>
+          <h5 class="fw-bold mb-2 section-heading">
+            {{ item.assignment.title }}
+          </h5>
 
-              {% if item.due_date %}
-                <p class="mb-2">
-                  <strong>Due:</strong> {{ item.due_date|date:"M d, Y H:i" }}
-                </p>
+          <p class="small mb-1">
+            <strong>Course:</strong> {{ item.assignment.course.title }}
+          </p>
 
-                {% with days_left=item.due_date|days_until %}
-                  {% if days_left != None %}
-                    {% if days_left >= 0 %}
-                      <p class="small mb-3">
-                        <strong>Time left:</strong>
-                        <span class="badge
-                          {% if days_left == 0 %}
-                            bg-danger
-                          {% elif days_left <= 2 %}
-                            bg-warning text-dark
-                          {% elif days_left <= 7 %}
-                            bg-info
-                          {% else %}
-                            bg-success
-                          {% endif %}">
-                          {% if days_left == 0 %}
-                            Due today
-                          {% else %}
-                            {{ days_left }} day{{ days_left|pluralize }} left
-                          {% endif %}
-                        </span>
-                      </p>
-                    {% else %}
-                      <p class="small mb-3">
-                        <strong>Status:</strong>
-                        <span class="badge bg-danger">
-                          Overdue by {{ days_left|abs_value }} day{{ days_left|abs_value|pluralize }}
-                        </span>
-                      </p>
-                    {% endif %}
-                  {% endif %}
-                {% endwith %}
+          <p class="small mb-2">
+            {{ item.assignment.description|truncatewords:20 }}
+          </p>
+
+          {% if item.due_date %}
+          <p class="mb-2">
+            <strong>Due:</strong> {{ item.due_date|date:"M d, Y H:i" }}
+          </p>
+          {% endif %}
+
+          {% if item.attempt_count %}
+          <p class="small mb-2">
+            <span class="badge bg-secondary">
+              Attempt {{ item.attempt_count }}/5
+            </span>
+          </p>
+          {% endif %}
+
+          {% with days_left=item.due_date|days_until %}
+          {% if days_left != None %}
+          {% if days_left >= 0 %}
+
+          <p class="small mb-3">
+            <strong>Time left:</strong>
+
+            <span class="badge
+              {% if days_left == 0 %}
+                bg-danger
+              {% elif days_left <= 2 %}
+                bg-warning text-dark
+              {% elif days_left <= 7 %}
+                bg-info
+              {% else %}
+                bg-success
+              {% endif %}">
+
+              {% if days_left == 0 %}
+                Due today
+              {% else %}
+                {{ days_left }} day{{ days_left|pluralize }} left
               {% endif %}
 
-              <div class="mt-auto">
-                <a href="{% url 'submit_assignment' item.assignment.id %}"
-                   class="btn btn-primary w-100 fw-semibold">
-                  Submit Assignment
-                </a>
-              </div>
+            </span>
+          </p>
 
-            </div>
+          {% else %}
+
+          <p class="small mb-3">
+            <span class="badge bg-danger">
+              Overdue by {{ days_left|abs_value }} day{{ days_left|abs_value|pluralize }}
+            </span>
+          </p>
+
+          {% endif %}
+          {% endif %}
+          {% endwith %}
+
+          <div class="mt-auto">
+            <a href="{% url 'submit_assignment' item.assignment.id %}"
+               class="btn btn-primary w-100 fw-semibold">
+              Submit Assignment
+            </a>
           </div>
-        {% endfor %}
+
+        </div>
+
       </div>
+      {% endfor %}
+
+    </div>
 
     {% else %}
-      <div class="empty-state text-center py-5">
-        <p class="mb-3">✅ No pending assignments!</p>
-        <a href="{% url 'course_list' %}"
-           class="btn btn-outline-info px-4 py-2">
-          Browse Courses
-        </a>
-      </div>
+
+    <div class="empty-state text-center py-5">
+      <p class="mb-3">✅ No pending assignments!</p>
+      <a href="{% url 'course_list' %}" class="btn btn-outline-info px-4 py-2">
+        Browse Courses
+      </a>
+    </div>
+
     {% endif %}
   </div>
 
-  <!-- ================= Submitted (Approved + Awaiting) ================= -->
+  <!-- ================= Submitted ================= -->
   <div class="mb-5">
     <h4 class="text-success mb-3">📘 Submitted Assignments</h4>
 
     {% if submitted_assignments %}
-      <div class="row g-4">
-        {% for item in submitted_assignments %}
-          <div class="col-md-6 col-lg-4">
-            <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
+    <div class="row g-4">
 
-              <h5 class="fw-bold mb-2">
-                {{ item.assignment.title }}
-              </h5>
+      {% for item in submitted_assignments %}
+      <div class="col-md-6 col-lg-4">
 
-              <p class="small mb-1">
-                <strong>Course:</strong> {{ item.assignment.course.title }}
-              </p>
+        <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
 
-              <p class="small mb-1">
-                <strong>Submitted:</strong>
-                {{ item.submission.submitted_at|date:"M d, Y H:i" }}
-              </p>
+          <h5 class="fw-bold mb-2">
+            {{ item.assignment.title }}
+          </h5>
 
-              {% if item.due_date and item.submission.submitted_at > item.due_date %}
-                <span class="badge bg-danger mb-3">
-                  ⚠ Late Submission
-                </span>
-              {% endif %}
+          <p class="small mb-1">
+            <strong>Course:</strong> {{ item.assignment.course.title }}
+          </p>
 
-              <div class="mt-auto">
-                {% if item.submission.status == "approved" %}
-                  <div class="badge bg-success w-100 py-2 mb-2">
-                    ✔ Approved — {{ item.submission.marks }}/10
-                  </div>
-                {% else %}
-                  <span class="badge bg-warning text-dark w-100 py-2">
-                    ⏳ Awaiting Review
-                  </span>
-                {% endif %}
-              </div>
+          <p class="small mb-1">
+            <strong>Submitted:</strong>
+            {{ item.submission.submitted_at|date:"M d, Y H:i" }}
+          </p>
 
+          <span class="badge bg-secondary mb-2">
+            Attempt {{ item.attempt_count }}/5
+          </span>
+
+          {% if item.due_date and item.submission.submitted_at > item.due_date %}
+          <span class="badge bg-danger mb-3">
+            ⚠ Late Submission
+          </span>
+          {% endif %}
+
+          <div class="mt-auto">
+
+            {% if item.submission.status == "approved" %}
+            <div class="badge bg-success w-100 py-2 mb-2">
+              ✔ Approved — {{ item.submission.marks }}/10
             </div>
+
+            {% else %}
+            <span class="badge bg-warning text-dark w-100 py-2">
+              ⏳ Awaiting Review
+            </span>
+
+            {% endif %}
+
           </div>
-        {% endfor %}
+
+        </div>
+
       </div>
+      {% endfor %}
+
+    </div>
 
     {% else %}
-      <p class="text-muted">No submitted assignments yet.</p>
+    <p class="text-muted">No submitted assignments yet.</p>
     {% endif %}
   </div>
 
   <!-- ================= Rejected ================= -->
   <div>
+
     <h4 class="text-danger mb-3">❌ Rejected Assignments</h4>
 
     {% if rejected_assignments %}
-      <div class="row g-4">
-        {% for item in rejected_assignments %}
-          <div class="col-md-6 col-lg-4">
-            <div class="course-card h-100 p-4 d-flex flex-column border border-danger border-opacity-50">
+    <div class="row g-4">
 
-              <h5 class="fw-bold mb-2">
-                {{ item.assignment.title }}
-              </h5>
+      {% for item in rejected_assignments %}
+      <div class="col-md-6 col-lg-4">
 
-              <p class="small mb-1">
-                <strong>Course:</strong> {{ item.assignment.course.title }}
-              </p>
+        <div class="course-card h-100 p-4 d-flex flex-column border border-danger border-opacity-50">
 
-              <p class="small text-danger mb-3">
-                <strong>Reason:</strong>
-                {{ item.submission.feedback|default:"No feedback provided." }}
-              </p>
+          <h5 class="fw-bold mb-2">
+            {{ item.assignment.title }}
+          </h5>
 
-              <div class="mt-auto">
-                <a href="{% url 'submit_assignment' item.assignment.id %}"
-                   class="btn btn-outline-danger w-100">
-                  Resubmit Assignment
-                </a>
-              </div>
+          <p class="small mb-1">
+            <strong>Course:</strong> {{ item.assignment.course.title }}
+          </p>
 
-            </div>
+          <span class="badge bg-warning text-dark mb-2">
+            Attempt {{ item.attempt_count }}/5
+          </span>
+
+          <p class="small text-danger mb-3">
+            <strong>Reason:</strong>
+            {{ item.submission.feedback|default:"No feedback provided." }}
+          </p>
+
+          <div class="mt-auto">
+
+            {% if item.attempt_count >= 5 %}
+
+            <span class="badge bg-danger w-100 py-2">
+              Failed — Max Attempts Reached
+            </span>
+
+            {% else %}
+
+            <a href="{% url 'submit_assignment' item.assignment.id %}"
+               class="btn btn-outline-danger w-100">
+              Resubmit Assignment
+            </a>
+
+            <p class="small text-muted text-center mt-2">
+              {{ item.attempts_left }} attempt{{ item.attempts_left|pluralize }} left
+            </p>
+
+            {% endif %}
+
           </div>
-        {% endfor %}
+
+        </div>
+
       </div>
+      {% endfor %}
+
+    </div>
 
     {% else %}
-      <p class="text-muted">No rejected assignments 🎉</p>
+    <p class="text-muted">No rejected assignments 🎉</p>
     {% endif %}
+
   </div>
 
 </div>

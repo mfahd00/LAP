@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container py-4">
+    <h3 class="mb-4">Submission History – {{ student.username }}</h3>
+
+    <div class="card shadow-sm">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Attempt</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th>Marks</th>
+            <th>Feedback</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for submission in submissions %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+
+              <td>{{ submission.submitted_at|date:'M d, Y H:i' }}</td>
+
+              <td>
+                {% if submission.status == 'approved' %}
+                  <span class="badge bg-success">Approved</span>
+                {% elif submission.status == 'rejected' %}
+                  <span class="badge bg-danger">Rejected</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Submitted</span>
+                {% endif %}
+              </td>
+
+              <td>{{ submission.marks|default:'-' }}/10</td>
+
+              <td>{{ submission.feedback|default:'-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

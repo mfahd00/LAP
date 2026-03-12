@@ -75,10 +75,19 @@
           <td>{{ enrollment.student.email }}</td>
           <td>{{ enrollment.course.title }}</td>
           <td>
-            <button class="btn btn-danger btn-sm ajax-action"
-                    data-url="{% url 'remove_enrollment' enrollment.id %}">
-              Remove
-            </button>
+            <div class="d-flex gap-2 justify-content-center">
+
+<a href="{% url 'student_detail' enrollment.student.id %}"
+   class="btn btn-outline-primary btn-sm">
+   View
+</a>
+
+<button class="btn btn-danger btn-sm ajax-action"
+        data-url="{% url 'remove_enrollment' enrollment.id %}">
+  Remove
+</button>
+
+</div>
           </td>
         </tr>
         {% endfor %}

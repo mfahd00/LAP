@@ -7,7 +7,7 @@ from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.utils import timezone
-from .models import Course, Lesson, Enrollment, Profile, Category, Assignment, Submission, Announcement, Department, LessonDownload
+from .models import Course, Lesson, Enrollment, Profile, Category, Assignment, Submission, Announcement, Department, LessonDownload, Notification, CourseResult
 from .forms import CourseForm, LessonForm, StudentRegistrationForm, AssignmentForm, SubmissionForm, AnnouncementForm, InstructorRegistrationForm, ProfileUpdateForm
 from django.views.decorators.cache import never_cache
 from django.template.loader import render_to_string
@@ -239,6 +239,11 @@ def enroll_course(request, course_id):
         course=course,
         defaults={'is_approved': False, 'enrolled_at': timezone.now()}
     )
+    Notification.objects.create(
+        user=course.created_by,
+        message=f"{request.user.username} requested enrollment for {course.title}",
+        link="/instructor/enrollments/"
+    )
 
     # Existing enrollment
     if not created:
@@ -328,6 +333,11 @@ def manage_enrollments(request):
 def approve_enrollment(request, enrollment_id):
     enrollment = get_object_or_404(Enrollment, id=enrollment_id, course__created_by=request.user)
     enrollment.is_approved = True
+    Notification.objects.create(
+        user=enrollment.student,
+        message=f"You are approved for {enrollment.course.title}",
+        link=f"/courses/{enrollment.course.id}/"
+    )
     enrollment.save()
     messages.success(request, f"{enrollment.student.username} has been approved for {enrollment.course.title}.")
     return redirect('manage_enrollments')
@@ -527,11 +537,12 @@ def login_page(request):
 @login_required
 def create_assignment(request, course_id):
     course = get_object_or_404(Course, id=course_id)
+
     if not request.user.profile.is_instructor or course.created_by != request.user:
         return HttpResponseForbidden("Only the instructor of this course can create assignments.")
-    
+
     if request.method == 'POST':
-        form = AssignmentForm(request.POST)
+        form = AssignmentForm(request.POST, course=course)
         if form.is_valid():
             assignment = form.save(commit=False)
             assignment.course = course
@@ -539,7 +550,7 @@ def create_assignment(request, course_id):
             assignment.save()
             return redirect('course_detail', course_id=course.id)
     else:
-        form = AssignmentForm()
+        form = AssignmentForm(course=course)
 
     return render(request, 'assignments/create_assignment.html', {
         'form': form,
@@ -561,7 +572,11 @@ def assignment_list(request, course_id):
 @login_required
 def submit_assignment(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
-
+    Notification.objects.create(
+        user=assignment.created_by,
+        message=f"{request.user.username} submitted {assignment.title}",
+        link=f"/assignments/{assignment.id}/submissions/"
+    )    
     enrollment = Enrollment.objects.filter(
         student=request.user,
         course=assignment.course,
@@ -571,58 +586,46 @@ def submit_assignment(request, assignment_id):
     if not enrollment:
         return HttpResponseForbidden("You are not enrolled in this course.")
 
-    existing_submission = Submission.objects.filter(
+    submissions = Submission.objects.filter(
         assignment=assignment,
         enrollment=enrollment
-    ).first()
+    ).order_by("-submitted_at")
 
-    if existing_submission:
-        if existing_submission.status == "approved":
-            messages.warning(request, "This assignment has already been approved. Resubmission not allowed.")
-            return redirect('student_assignments')
+    attempt_count = submissions.count()
+    latest_submission = submissions.first()
 
-        if existing_submission.status == "submitted":
-            messages.info(request, "Your submission is under review.")
-            return redirect('student_assignments')
+    if latest_submission and latest_submission.status == "approved":
+        messages.warning(request, "This assignment is already approved.")
+        return redirect("student_assignments")
 
-        if existing_submission.status == "rejected":
-            if request.method == 'POST':
-                form = SubmissionForm(request.POST, request.FILES)
-                if form.is_valid():
-                    existing_submission.submitted_file = form.cleaned_data['submitted_file']
-                    existing_submission.submitted_at = timezone.now()
-                    existing_submission.status = "submitted"
-                    existing_submission.marks = None
-                    existing_submission.feedback = None
-                    existing_submission.save()
+    if latest_submission and latest_submission.status == "submitted":
+        messages.info(request, "Your submission is currently under review.")
+        return redirect("student_assignments")
 
-                    messages.success(request, "Assignment resubmitted successfully!")
-                    return redirect('student_assignments')
-            else:
-                form = SubmissionForm()
+    if attempt_count >= 5:
+        messages.error(request, "Maximum attempts reached. You cannot resubmit this assignment.")
+        return redirect("student_assignments")
 
-            return render(request, 'assignments/submit_assignment.html', {
-                'form': form,
-                'assignment': assignment,
-                'resubmitting': True
-            })
-
-    if request.method == 'POST':
+    if request.method == "POST":
         form = SubmissionForm(request.POST, request.FILES)
+
         if form.is_valid():
             submission = form.save(commit=False)
             submission.assignment = assignment
             submission.enrollment = enrollment
+            submission.status = "submitted"
             submission.save()
 
-            messages.success(request, "Assignment submitted successfully!")
-            return redirect('student_assignments')
+            messages.success(request, f"Assignment submitted successfully! Attempt {attempt_count + 1}/5")
+            return redirect("student_assignments")
+
     else:
         form = SubmissionForm()
 
-    return render(request, 'assignments/submit_assignment.html', {
-        'form': form,
-        'assignment': assignment
+    return render(request, "assignments/submit_assignment.html", {
+        "form": form,
+        "assignment": assignment,
+        "attempts_left": 5 - attempt_count
     })
 
 @login_required
@@ -675,10 +678,22 @@ def student_assignments(request):
 
         submission = submission_map.get(assignment.id)
 
+        attempt_count = Submission.objects.filter(
+            assignment=assignment,
+            enrollment=enrollment
+        ).count()
+
+        latest_submission = Submission.objects.filter(
+            assignment=assignment,
+            enrollment=enrollment
+        ).order_by("-submitted_at").first()
+
         assignment_info = {
             'assignment': assignment,
             'due_date': due_date,
-            'submission': submission,
+            'submission': latest_submission,
+            'attempt_count': attempt_count,
+            'attempts_left': 5 - attempt_count
         }
 
         if submission:
@@ -726,28 +741,56 @@ def announcement_list(request, course_id):
         'announcements': announcements,
     })
 
+@login_required
 def create_announcement(request):
+
     if not request.user.profile.is_instructor:
         return redirect('global_announcement_list')
 
     courses = Course.objects.filter(created_by=request.user)
 
-    if request.method == 'POST':
+    if request.method == "POST":
+
         form = AnnouncementForm(request.POST)
+
         if form.is_valid():
+
             announcement = form.save(commit=False)
-            course_id = request.POST.get('course_id')
+
+            course_id = request.POST.get("course_id")
+
             if course_id:
-                announcement.course = get_object_or_404(Course, id=course_id)
+                course = get_object_or_404(
+                    Course,
+                    id=course_id,
+                    created_by=request.user
+                )
+                announcement.course = course
+
             announcement.created_by = request.user
             announcement.save()
-            return redirect('global_announcement_list')
+
+            # 🔔 Notify all enrolled students
+            enrollments = Enrollment.objects.filter(
+                course=announcement.course,
+                is_approved=True
+            ).exclude(student=request.user)
+
+            for enrollment in enrollments:
+                Notification.objects.create(
+                    user=enrollment.student,
+                    message=f"New announcement in {announcement.course.title}: {announcement.title}",
+                    link=f"/courses/{announcement.course.id}/announcements/"
+                )
+
+            return redirect("global_announcement_list")
+
     else:
         form = AnnouncementForm()
 
-    return render(request, 'announcements/announcement_form.html', {
-        'form': form,
-        'courses': courses,
+    return render(request, "announcements/announcement_form.html", {
+        "form": form,
+        "courses": courses
     })
 
 @login_required
@@ -1147,6 +1190,11 @@ def approve_submission(request, submission_id):
         id=submission_id,
         assignment__created_by=request.user
     )
+    Notification.objects.create(
+        user=submission.enrollment.student,
+        message=f"Your assignment '{submission.assignment.title}' was graded ({submission.marks}/10)",
+        link="/assignments/"
+    )
 
     due_date = submission.enrollment.get_assignment_due_date(submission.assignment)
     is_late = due_date and submission.submitted_at > due_date
@@ -1176,7 +1224,11 @@ def reject_submission(request, submission_id):
         id=submission_id,
         assignment__created_by=request.user
     )
-
+    Notification.objects.create(
+        user=submission.enrollment.student,
+        message=f"Your assignment '{submission.assignment.title}' was rejected",
+        link="/assignments/"
+    )
     if request.method == "POST":
         reason = request.POST.get("reason")
 
@@ -1194,6 +1246,7 @@ def reject_submission(request, submission_id):
 
 @login_required
 def instructor_latest_submissions(request):
+
     if not request.user.profile.is_instructor:
         return HttpResponseForbidden("Only instructors allowed.")
 
@@ -1205,20 +1258,40 @@ def instructor_latest_submissions(request):
         "enrollment__student"
     ).order_by("-submitted_at")
 
-    for submission in submissions:
-        due_date = submission.enrollment.get_assignment_due_date(submission.assignment)
+    latest_map = {}
+    attempt_map = {}
 
-        submission.is_late = (
+    for sub in submissions:
+
+        key = (sub.assignment.id, sub.enrollment.student.id)
+
+        attempt_map[key] = attempt_map.get(key, 0) + 1
+
+        if key not in latest_map:
+            latest_map[key] = sub
+
+    latest_submissions = []
+
+    for key, sub in latest_map.items():
+
+        sub.attempt_count = attempt_map[key]
+
+        due_date = sub.enrollment.get_assignment_due_date(sub.assignment)
+
+        sub.is_late = (
             due_date is not None and
-            submission.submitted_at > due_date
+            sub.submitted_at > due_date
         )
 
-        submission.due_date = due_date
+        sub.due_date = due_date
+
+        latest_submissions.append(sub)
+
+    latest_submissions.sort(key=lambda x: x.submitted_at, reverse=True)
 
     return render(request, "instructors/latest_submissions.html", {
-        "submissions": submissions
+        "submissions": latest_submissions
     })
-
 @login_required
 def instructor_detail(request, user_id):
     if not request.user.profile.is_moderator:
@@ -1573,3 +1646,333 @@ def moderator_courses(request):
         "search": search,
         "sort": sort,
     })
+
+@login_required
+def submission_history(request, assignment_id, student_id):
+
+    assignment = get_object_or_404(
+        Assignment,
+        id=assignment_id,
+        created_by=request.user
+    )
+
+    enrollment = get_object_or_404(
+        Enrollment,
+        student_id=student_id,
+        course=assignment.course
+    )
+
+    submissions = Submission.objects.filter(
+        assignment=assignment,
+        enrollment=enrollment
+    ).order_by("submitted_at")
+
+    return render(request, "assignments/submission_history.html", {
+        "assignment": assignment,
+        "student": enrollment.student,
+        "submissions": submissions
+    })
+
+@login_required
+def notifications(request):
+
+    notifications = request.user.notifications.order_by("-created_at")
+
+    unread_notifications = notifications.filter(is_read=False)
+
+    if unread_notifications.exists():
+        unread_notifications.update(is_read=True)
+
+    context = {
+        "notifications": notifications
+    }
+
+    return render(request, "auth/notifications.html", context)
+
+from django.db.models import Sum
+@login_required
+def finalize_course_result(request, enrollment_id):
+
+    enrollment = get_object_or_404(
+        Enrollment,
+        id=enrollment_id,
+        course__created_by=request.user
+    )
+
+    assignments = Assignment.objects.filter(course=enrollment.course)
+
+    submissions = Submission.objects.filter(
+        enrollment=enrollment
+    ).select_related("assignment").order_by("-submitted_at")
+
+    total_assignments = assignments.count()
+
+    approved_submissions = submissions.filter(status="approved")
+
+    completed_assignments = approved_submissions.values("assignment").distinct().count()
+
+    total_score = approved_submissions.aggregate(
+        total=Sum("marks")
+    )["total"] or 0
+
+    max_score = total_assignments * 10
+
+    score_percent = 0
+    if max_score > 0:
+        score_percent = round((total_score / max_score) * 100, 2)
+
+    completion_rate = 0
+    if total_assignments > 0:
+        completion_rate = round((completed_assignments / total_assignments) * 100, 2)
+
+    if request.method == "POST":
+        marks = request.POST.get("marks")
+
+        if marks is not None:
+            CourseResult.objects.update_or_create(
+                enrollment=enrollment,
+                defaults={
+                    "total_marks": int(marks),
+                    "graded": True,
+                    "graded_at": timezone.now(),
+                }
+            )
+
+            enrollment.completed = True
+            enrollment.save()
+
+            Notification.objects.create(
+                user=enrollment.student,
+                message=f"Your final result for {enrollment.course.title} has been published.",
+                link="/courses/my-courses/"
+            )
+
+        return redirect("student_detail", enrollment_id=enrollment.id)
+
+    return render(request, "courses/finalize_course_result.html", {
+        "enrollment": enrollment,
+        "submissions": submissions,
+        "total_score": total_score,
+        "score_percent": score_percent,
+        "completion_rate": completion_rate,
+        "total_assignments": total_assignments,
+        "completed_assignments": completed_assignments,
+    })
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from datetime import date
+
+@login_required
+def download_certificate(request, enrollment_id):
+
+    enrollment = get_object_or_404(
+        Enrollment,
+        id=enrollment_id,
+        student=request.user,
+        course_result__graded=True
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="certificate_{enrollment.course.title}.pdf"'
+
+    p = canvas.Canvas(response, pagesize=letter)
+
+    width, height = letter
+
+    p.setFont("Helvetica-Bold", 28)
+    p.drawCentredString(width/2, height-150, "Certificate of Completion")
+
+    p.setFont("Helvetica", 16)
+    p.drawCentredString(width/2, height-220, "This is to certify that")
+
+    p.setFont("Helvetica-Bold", 22)
+    p.drawCentredString(width/2, height-260, enrollment.student.get_full_name() or enrollment.student.username)
+
+    p.setFont("Helvetica", 16)
+    p.drawCentredString(width/2, height-310, "has successfully completed the course")
+
+    p.setFont("Helvetica-Bold", 20)
+    p.drawCentredString(width/2, height-350, enrollment.course.title)
+
+    p.setFont("Helvetica", 14)
+    p.drawCentredString(width/2, height-400, f"Final Score: {enrollment.course_result.total_marks}/100")
+
+    p.setFont("Helvetica", 12)
+    p.drawCentredString(width/2, height-450, f"Issued on {date.today()}")
+
+    p.showPage()
+    p.save()
+
+    return response
+
+@login_required
+def instructor_leaderboard(request):
+
+    instructors = User.objects.filter(
+        profile__is_instructor=True,
+        profile__is_approved=True
+    )
+
+    leaderboard = []
+
+    for instructor in instructors:
+
+        courses = Course.objects.filter(created_by=instructor)
+
+        students = Enrollment.objects.filter(
+            course__in=courses,
+            is_approved=True
+        ).count()
+
+        course_count = courses.count()
+
+        enrollments = Enrollment.objects.filter(
+            course__in=courses,
+            is_approved=True
+        )
+
+        completion_rates = [e.progress_percentage for e in enrollments]
+
+        completion_rate = 0
+        if completion_rates:
+            completion_rate = sum(completion_rates) / len(completion_rates)
+
+        submissions = Submission.objects.filter(
+            assignment__course__in=courses
+        )
+
+        approved = submissions.filter(status="approved").count()
+        total = submissions.count()
+
+        assignment_success = 0
+        if total > 0:
+            assignment_success = (approved / total) * 100
+
+        score = (
+            students * 0.4 +
+            course_count * 5 +
+            completion_rate * 0.2 +
+            assignment_success * 0.15
+        )
+
+        leaderboard.append({
+            "instructor": instructor,
+            "students": students,
+            "courses": course_count,
+            "completion_rate": round(completion_rate,2),
+            "assignment_success": round(assignment_success,2),
+            "score": round(score,2)
+        })
+
+    leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)
+
+    for i, entry in enumerate(leaderboard):
+        entry["rank"] = i + 1
+
+    return render(request, "leaderboard/instructor_leaderboard.html", {
+        "leaderboard": leaderboard
+    })
+@login_required
+def instructor_courses(request, instructor_id):
+
+    instructor = get_object_or_404(
+        User,
+        id=instructor_id,
+        profile__is_instructor=True
+    )
+
+    courses = Course.objects.filter(
+        created_by=instructor
+    ).order_by("-created_at")
+
+    return render(request, "courses/instructor_courses.html", {
+        "instructor": instructor,
+        "courses": courses
+    })
+
+from django.db.models import Count
+import json
+from django.db.models.functions import TruncDate
+from django.db.models import Count
+
+@login_required
+def instructor_analytics(request):
+
+    if not request.user.profile.is_instructor:
+        return HttpResponseForbidden("Only instructors allowed.")
+
+    courses = Course.objects.filter(created_by=request.user)
+
+    total_courses = courses.count()
+
+    enrollments = Enrollment.objects.filter(
+        course__in=courses,
+        is_approved=True
+    )
+    enrollment_stats = (
+        Enrollment.objects
+        .filter(course__in=courses, is_approved=True)
+        .annotate(date=TruncDate("enrolled_at"))
+        .values("date")
+        .annotate(count=Count("id"))
+        .order_by("date")
+    )
+
+    growth_labels = [e["date"].strftime("%b %d") for e in enrollment_stats]
+    growth_counts = [e["count"] for e in enrollment_stats]
+    total_students = enrollments.count()
+
+    total_assignments = Assignment.objects.filter(
+        course__in=courses
+    ).count()
+
+    submissions = Submission.objects.filter(
+        assignment__course__in=courses
+    )
+
+    approved_submissions = submissions.filter(status="approved").count()
+    rejected_submissions = submissions.filter(status="rejected").count()
+    pending_submissions = submissions.filter(status="submitted").count()
+
+    completion_rates = [e.progress_percentage for e in enrollments]
+
+    avg_completion = 0
+    if completion_rates:
+        avg_completion = sum(completion_rates) / len(completion_rates)
+
+    popular_course = courses.annotate(
+        total_students=Count("enrollment")
+    ).order_by("-total_students").first()
+
+    # Chart 1: Students per course
+    course_stats = courses.annotate(
+        total_students=Count("enrollment")
+    )
+
+    course_labels = [c.title for c in course_stats]
+    course_students = [c.total_students for c in course_stats]
+
+    context = {
+        "total_courses": total_courses,
+        "total_students": total_students,
+        "total_assignments": total_assignments,
+        "approved_submissions": approved_submissions,
+        "rejected_submissions": rejected_submissions,
+        "pending_submissions": pending_submissions,
+        "avg_completion": round(avg_completion, 2),
+        "popular_course": popular_course,
+        "growth_labels": json.dumps(growth_labels),
+        "growth_counts": json.dumps(growth_counts),
+        "course_labels": json.dumps(course_labels),
+        "course_students": json.dumps(course_students),
+    }
+
+    return render(
+        request,
+        "instructors/analytics.html",
+        context
+    )

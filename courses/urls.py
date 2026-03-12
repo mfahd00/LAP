@@ -97,6 +97,8 @@ urlpatterns = [
     path('assignments/<int:assignment_id>/submit/', views.submit_assignment, name='submit_assignment'),
     path('assignments/<int:assignment_id>/submissions/', views.view_submissions, name='view_submissions'),
     path('assignments/', views.student_assignments, name='student_assignments'),
+    path("assignment/<int:assignment_id>/history/<int:student_id>/",views.submission_history,name="submission_history"),
+
     path("submission/<int:submission_id>/approve/", views.approve_submission, name="approve_submission"),
     path("submission/<int:submission_id>/reject/", views.reject_submission, name="reject_submission"),
 
@@ -117,8 +119,14 @@ urlpatterns = [
 
     path('my-courses/', views.my_enrolled_courses, name='my_enrolled_courses'),
 
-    path('lesson/download/<int:lesson_id>/',
-     views.download_lesson_material,
-     name='download_lesson_material'),
-     path('downloads/', views.student_downloads, name='student_downloads'),
+    path('lesson/download/<int:lesson_id>/',views.download_lesson_material,name='download_lesson_material'),
+    path('downloads/', views.student_downloads, name='student_downloads'),
+
+    path("notifications/", views.notifications, name="notifications"),
+    path("finalize-course/<int:enrollment_id>/",views.finalize_course_result,name="finalize_course_result"),
+
+    path("certificate/<int:enrollment_id>/",views.download_certificate,name="download_certificate"),
+    path("leaderboard/", views.instructor_leaderboard, name="leaderboard"),
+    path("instructor/<int:instructor_id>/courses/",views.instructor_courses,name="instructor_courses"),
+    path("instructor/analytics/",views.instructor_analytics,name="instructor_analytics"),
 ]

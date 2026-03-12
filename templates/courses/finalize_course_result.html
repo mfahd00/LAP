@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Finalize Course Result | LAP{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+<h3 class="fw-bold text-center mb-4 section-heading">
+Finalize Course Result
+</h3>
+
+<div class="overlay-box p-4">
+
+<div class="row mb-4">
+
+<div class="col-md-6">
+<strong>Student:</strong> {{ enrollment.student.username }}
+</div>
+
+<div class="col-md-6">
+<strong>Course:</strong> {{ enrollment.course.title }}
+</div>
+
+</div>
+
+<hr>
+
+<h5 class="fw-bold mb-3">Assignment Submissions</h5>
+
+{% if submissions %}
+
+<div class="table-responsive mb-4">
+
+<table class="table table-bordered align-middle text-center">
+
+<thead class="table-light">
+<tr>
+<th>Assignment</th>
+<th>Submitted</th>
+<th>Status</th>
+<th>Marks</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for sub in submissions %}
+
+<tr>
+
+<td>{{ sub.assignment.title }}</td>
+
+<td>{{ sub.submitted_at|date:"M d, Y H:i" }}</td>
+
+<td>
+
+{% if sub.status == "approved" %}
+<span class="badge bg-success">Approved</span>
+
+{% elif sub.status == "rejected" %}
+<span class="badge bg-danger">Rejected</span>
+
+{% else %}
+<span class="badge bg-warning text-dark">Pending</span>
+{% endif %}
+
+</td>
+
+<td>
+{% if sub.marks %}
+{{ sub.marks }}/10
+{% else %}
+—
+{% endif %}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% else %}
+
+<p class="text-muted">No submissions found.</p>
+
+{% endif %}
+
+<hr>
+
+<h5 class="fw-bold mb-3">Assignment Statistics</h5>
+
+<div class="row mb-4 text-center">
+
+<div class="col-md-4">
+<div class="p-3 border rounded">
+<div class="small text-muted">Assignments Completed</div>
+<div class="fw-bold fs-5">
+{{ completed_assignments }} / {{ total_assignments }}
+</div>
+</div>
+</div>
+
+<div class="col-md-4">
+<div class="p-3 border rounded">
+<div class="small text-muted">Completion Rate</div>
+<div class="fw-bold fs-5 text-success">
+{{ completion_rate }}%
+</div>
+</div>
+</div>
+
+<div class="col-md-4">
+<div class="p-3 border rounded">
+<div class="small text-muted">Assignment Score</div>
+<div class="fw-bold fs-5 text-primary">
+{{ score_percent }}%
+</div>
+</div>
+</div>
+
+</div>
+
+<hr>
+
+{% if enrollment.course_result and enrollment.course_result.graded %}
+
+<div class="alert alert-success text-center">
+
+<strong>Result Already Published</strong>
+
+<br>
+
+Final Score:
+<strong>{{ enrollment.course_result.total_marks }}/100</strong>
+
+</div>
+
+<a href="{% url 'student_detail' enrollment.id %}"
+class="btn btn-outline-primary w-100">
+
+Back to Student Profile
+
+</a>
+
+{% else %}
+
+<form method="post">
+
+{% csrf_token %}
+
+<div class="mb-3">
+
+<label class="form-label fw-semibold">
+Final Course Marks (Out of 100)
+</label>
+
+<input type="number"
+name="marks"
+class="form-control"
+min="0"
+max="100"
+required>
+
+</div>
+
+<div class="d-flex gap-2">
+
+<button class="btn btn-success">
+Publish Result
+</button>
+
+<a href="{% url 'student_detail' enrollment.id %}"
+class="btn btn-outline-secondary">
+Cancel
+</a>
+
+</div>
+
+</form>
+
+{% endif %}
+
+</div>
+
+</div>
+
+{% endblock %}

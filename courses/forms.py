@@ -43,27 +43,55 @@ class AssignmentForm(forms.ModelForm):
         model = Assignment
         fields = ['title', 'description', 'relative_due_days']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
-            'relative_due_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'e.g. 7'}),
-            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'title': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4
+            }),
+            'relative_due_days': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. 7',
+                'min': '1'
+            }),
         }
-    
+
     def __init__(self, *args, course=None, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.course = course
-        if course:
-            max_days = course.duration_days + 5
-            self.fields['relative_due_days'].widget.attrs['max'] = max_days
-            self.fields['relative_due_days'].help_text = f'Number of days after enrollment this assignment is due. Maximum: {max_days} days (course duration + 5 days).'
-    
-    def clean_relative_due_days(self):
-        relative_due_days = self.cleaned_data.get('relative_due_days')
+
+        self.fields['relative_due_days'].min_value = 1
+
         if self.course:
             max_days = self.course.duration_days + 5
+
+            self.fields['relative_due_days'].widget.attrs['max'] = max_days
+            self.fields['relative_due_days'].help_text = (
+                f'Assignment must be due within {max_days} days '
+                f'(course duration {self.course.duration_days} + 5 days buffer).'
+            )
+
+    def clean_relative_due_days(self):
+        relative_due_days = self.cleaned_data.get("relative_due_days")
+
+        if relative_due_days is None:
+            return relative_due_days
+
+        if relative_due_days < 1:
+            raise forms.ValidationError(
+                "Due days must be at least 1."
+            )
+
+        if self.course:
+            max_days = self.course.duration_days + 5
+
             if relative_due_days > max_days:
                 raise forms.ValidationError(
-                    f'Assignment due date cannot exceed {max_days} days (course duration + 5 days).'
+                    f"Assignment due date cannot exceed {max_days} days."
                 )
+
         return relative_due_days
 
 class SubmissionForm(forms.ModelForm):
