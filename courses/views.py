@@ -352,51 +352,93 @@ def remove_enrollment(request, enrollment_id):
 
 
 from django.db.models import Q
+from django.db.models import Count
+from django.utils import timezone
 @never_cache
 @login_required
+
 def dashboard(request):
     user = request.user
+
+    unread_notifications_count = user.notifications.filter(is_read=False).count() if user.is_authenticated else 0
     latest_announcement = Announcement.objects.order_by('-created_at').first()
 
+    # =========================
+    # 🛡️ MODERATOR
+    # =========================
     if hasattr(user, "profile") and user.profile.is_moderator:
 
-        recent_instructors = Profile.objects.filter(
-            is_instructor=True
-        ).select_related("user").order_by("-user__date_joined")[:5]
-
-        recent_students = Profile.objects.filter(
+        total_students = Profile.objects.filter(
             is_instructor=False,
             is_moderator=False
-        ).select_related("user").order_by("-user__date_joined")[:5]
+        ).count()
 
-        recent_courses = Course.objects.order_by("-created_at")[:5]
-        recent_announcements = Announcement.objects.order_by("-created_at")[:5]
+        total_instructors = Profile.objects.filter(
+            is_instructor=True
+        ).count()
+
+        total_courses = Course.objects.count()
+
+        # 🔥 Pending instructors (only 3 for display)
+        all_pending_instructors = Profile.objects.filter(
+            is_instructor=True,
+            is_approved=False
+        ).select_related("user", "department").order_by("-user__date_joined")
+
+        pending_instructors = all_pending_instructors[:3]
+        pending_instructors_count = all_pending_instructors.count()
+
+
+        dept_qs = (
+            Profile.objects
+            .filter(
+                is_instructor=False,
+                is_moderator=False,
+                department__isnull=False
+            )
+            .values("department__name")
+            .annotate(student_count=Count("id"))
+            .order_by("-student_count")
+        )
+
+        dept_labels = [d["department__name"] for d in dept_qs]
+        dept_values = [d["student_count"] for d in dept_qs]
 
         return render(request, 'auth/dashboard.html', {
             'is_moderator': True,
-            'pending_instructors_count': Profile.objects.filter(
-                is_instructor=True,
-                is_approved=False
-            ).count(),
-            'total_instructors': Profile.objects.filter(
-                is_instructor=True
-            ).count(),
-            'total_students': Profile.objects.filter(
-                is_instructor=False,
-                is_moderator=False
-            ).count(),
-            'total_courses': Course.objects.count(),
-            'recent_instructors': recent_instructors,
-            'recent_students': recent_students,
-            'recent_courses': recent_courses,
-            'recent_announcements': recent_announcements,
+            'total_students': total_students,
+            'total_instructors': total_instructors,
+            'total_courses': total_courses,
+
+            # approvals
+            'pending_instructors': pending_instructors,
+            'pending_instructors_count': pending_instructors_count,
+
+            # chart
+            'dept_labels': dept_labels,
+            'dept_values': dept_values,
+
+            # existing
+            'latest_announcement': latest_announcement,
+            'unread_notifications_count': unread_notifications_count,
         })
 
+    # =========================
+    # ⏳ PENDING APPROVAL
+    # =========================
     if user.profile.is_instructor and not user.profile.is_approved:
         return render(request, 'auth/pending_approval.html')
 
+    # =========================
+    # 👨‍🏫 INSTRUCTOR
+    # =========================
     if user.profile.is_instructor:
+
         courses = Course.objects.filter(created_by=user)
+
+        total_assignments = Assignment.objects.filter(
+            course__in=courses
+        ).count()
 
         enrollments = Enrollment.objects.filter(
             course__in=courses,
@@ -405,36 +447,104 @@ def dashboard(request):
 
         students = list({enrollment.student for enrollment in enrollments})
 
+        # 🔥 NEW: Pending Work Metrics
+        pending_enrollments_count = Enrollment.objects.filter(
+            course__in=courses,
+            is_approved=False
+        ).count()
+
+        pending_submissions = Submission.objects.filter(
+            assignment__course__in=courses,
+            status="submitted"
+        ).select_related("enrollment", "assignment")
+
+        pending_submissions_count = pending_submissions.count()
+
+        # Late submissions calculation
+        late_submissions_count = 0
+        for sub in pending_submissions:
+            due_date = sub.enrollment.get_assignment_due_date(sub.assignment)
+            if due_date and sub.submitted_at > due_date:
+                late_submissions_count += 1
+
         return render(request, 'auth/dashboard.html', {
             'is_instructor': True,
             'courses': courses,
             'students': students,
             'latest_announcement': latest_announcement,
+            'unread_notifications_count': unread_notifications_count,
+            'total_assignments': total_assignments,
+
+            # ✅ NEW CONTEXT
+            'pending_enrollments_count': pending_enrollments_count,
+            'pending_submissions_count': pending_submissions_count,
+            'late_submissions_count': late_submissions_count,
         })
 
-    enrollments = user.enrollments.select_related('course').filter(
-        is_approved=True
+    # =========================
+    # 🎓 STUDENT DASHBOARD
+    # =========================
+    enrollments = user.enrollments.select_related('course').filter(is_approved=True)
+    completed_courses_count = sum(
+        1 for e in enrollments
+        if e.completed_lessons.count() == e.course.lessons.count()
     )
-
+    # Progress
     for enrollment in enrollments:
         enrollment.progress = enrollment.progress_percentage
 
     enrolled_course_ids = enrollments.values_list('course', flat=True)
 
+    # Pending assignments
     pending_assignments = Assignment.objects.filter(
         course__in=enrolled_course_ids
     ).exclude(
         submissions__enrollment__student=user
-    ).distinct()
+    ).distinct().select_related('course')
+
+    # Add days left
+    for assignment in pending_assignments:
+        enrollment = enrollments.filter(course=assignment.course).first()
+
+        if enrollment:
+            due_date = enrollment.get_assignment_due_date(assignment)
+
+            if due_date:
+                assignment.days_left = max((due_date - timezone.now()).days, 0)
+            else:
+                assignment.days_left = 0
+        else:
+            assignment.days_left = 0
 
     pending_count = pending_assignments.count()
 
+    # Remaining classes
     remaining_classes = sum(
         enrollment.course.lessons.count() -
         enrollment.completed_lessons.count()
         for enrollment in enrollments
     )
 
+    # =========================
+    # 🌍 POPULAR COURSES
+    # =========================
+    popular_courses = Course.objects.annotate(
+    total_students=Count("enrollment")
+    ).order_by("-total_students")[:5]
+
+    # =========================
+    # 👨‍🏫 TOP INSTRUCTORS
+    # =========================
+    top_instructors = User.objects.filter(
+        profile__is_instructor=True,
+        profile__is_approved=True
+    ).annotate(
+        total_students=Count("course__enrollment")
+    ).order_by("-total_students")[:5]
+
+    # =========================
+    # 🎯 FINAL RENDER
+    # =========================
     return render(request, 'auth/dashboard.html', {
         'is_instructor': False,
         'enrollments': enrollments,
@@ -442,8 +552,11 @@ def dashboard(request):
         'pending_count': pending_count,
         'remaining_classes': remaining_classes,
         'latest_announcement': latest_announcement,
+        'popular_courses': popular_courses,
+        'top_instructors': top_instructors,
+        'unread_notifications_count': unread_notifications_count,
+        'completed_courses_count': completed_courses_count,
     })
-
 
 
 
@@ -793,14 +906,30 @@ def create_announcement(request):
         "courses": courses
     })
 
+from django.db.models import Q
+
 @login_required
 def global_announcement_list(request):
-    if request.user.profile.is_instructor:
+
+    if request.user.profile.is_moderator:
+
+        # 👑 Moderator sees ALL announcements
+        announcements = Announcement.objects.all().select_related(
+            "course", "created_by"
+        ).order_by('-created_at')
+
+        courses = None
+
+    elif request.user.profile.is_instructor:
+
         announcements = Announcement.objects.filter(
             course__created_by=request.user
-        ).order_by('-created_at')
+        ).select_related("course", "created_by").order_by('-created_at')
+
         courses = Course.objects.filter(created_by=request.user)
+
     else:
+
         enrolled_courses = Enrollment.objects.filter(
             student=request.user,
             is_approved=True
@@ -808,7 +937,7 @@ def global_announcement_list(request):
 
         announcements = Announcement.objects.filter(
             course__in=enrolled_courses
-        ).order_by('-created_at')
+        ).select_related("course", "created_by").order_by('-created_at')
 
         courses = None
 
@@ -817,6 +946,7 @@ def global_announcement_list(request):
         'courses': courses
     })
 
+    
 def is_moderator(user):
     return hasattr(user, 'profile') and user.profile.is_moderator
 

@@ -2,207 +2,127 @@
 {% block title %}Platform Analytics | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-3">
 
-  <!-- Header -->
-  <div class="text-center mb-5">
-    <h2 class="fw-bold display-6 mb-2">Platform Analytics</h2>
-    <p class="text-muted">
-      Complete overview of system performance & growth
-    </p>
-  </div>
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold section-heading mb-0">📊 Platform Analytics</h4>
+      <small class="text-muted">System overview</small>
+    </div>
 
-  <!-- Filter -->
-  <div class="d-flex justify-content-center mb-5">
-    <form method="get" class="analytics-filter d-flex gap-2 align-items-center">
-      <select name="days" class="form-select shadow-sm">
-        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
-        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
-        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+    <form method="get" class="d-flex gap-2">
+      <select name="days" class="form-select form-select-sm">
+        <option value="7" {% if days == 7 %}selected{% endif %}>7d</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>30d</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>90d</option>
       </select>
-      <button class="btn btn-primary px-4 shadow-sm">Apply</button>
+      <button class="btn btn-sm">Apply</button>
     </form>
   </div>
 
-  <!-- KPI Cards -->
-  <div class="row g-4 mb-5">
+  <!-- STATS -->
+  <div class="course-card mb-3">
+    <div class="row g-3">
 
-    <div class="col-md-3">
-      <div class="analytics-card gradient-blue text-white">
-        <div>
-          <small>Total Instructors</small>
-          <h3 class="fw-bold">{{ total_instructors }}</h3>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <h6>👨‍🏫 Instructors</h6>
+          <h4>{{ total_instructors }}</h4>
         </div>
-        <div class="icon">👨‍🏫</div>
       </div>
-    </div>
 
-    <div class="col-md-3">
-      <div class="analytics-card gradient-green text-white">
-        <div>
-          <small>Approved</small>
-          <h3 class="fw-bold">{{ approved_instructors }}</h3>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <h6>✅ Approved</h6>
+          <h4>{{ approved_instructors }}</h4>
         </div>
-        <div class="icon">✅</div>
       </div>
-    </div>
 
-    <div class="col-md-3">
-      <div class="analytics-card gradient-warning text-dark">
-        <div>
-          <small>Pending</small>
-          <h3 class="fw-bold">{{ pending_instructors }}</h3>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <h6>⏳ Pending</h6>
+          <h4>{{ pending_instructors }}</h4>
         </div>
-        <div class="icon">⏳</div>
       </div>
-    </div>
 
-    <div class="col-md-3">
-      <div class="analytics-card gradient-info text-white">
-        <div>
-          <small>Total Students</small>
-          <h3 class="fw-bold">{{ total_students }}</h3>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <h6>👨‍🎓 Students</h6>
+          <h4>{{ total_students }}</h4>
         </div>
-        <div class="icon">👨‍🎓</div>
       </div>
-    </div>
 
-  </div>
-
-  <!-- Growth Cards -->
-  <div class="row g-4 mb-5">
-    <div class="col-md-6">
-      <div class="glass-card p-4">
-        <h6 class="fw-semibold text-muted mb-2">New Students ({{ days }} Days)</h6>
-        <h2 class="fw-bold text-success">{{ recent_students }}</h2>
-      </div>
-    </div>
-
-    <div class="col-md-6">
-      <div class="glass-card p-4">
-        <h6 class="fw-semibold text-muted mb-2">New Courses ({{ days }} Days)</h6>
-        <h2 class="fw-bold text-primary">{{ recent_courses }}</h2>
-      </div>
     </div>
   </div>
 
-<!-- Unified Analytics Card (Old Layout Inside) -->
-<div class="row mt-4">
-  <div class="col-12">
-    <div class="chart-card p-4">
+  <!-- GROWTH -->
+  <div class="course-card mb-3">
+    <div class="row g-3">
 
-      <h5 class="fw-bold mb-4">📊 Platform Insights</h5>
-
-      <div class="row g-4">
-
-        <!-- Left Column -->
-        <div class="col-md-6">
-          <div class="p-3 h-100">
-            <h6 class="fw-bold mb-3">
-              🏢 Student Distribution by Department
-            </h6>
-            <canvas id="departmentChart"></canvas>
-          </div>
+      <div class="col-md-6">
+        <div class="stat-card">
+          <h6>New Students ({{ days }}d)</h6>
+          <h4>{{ recent_students }}</h4>
         </div>
+      </div>
 
-        <!-- Right Column -->
-        <div class="col-md-6 d-flex flex-column gap-4">
+      <div class="col-md-6">
+        <div class="stat-card">
+          <h6>New Courses ({{ days }}d)</h6>
+          <h4>{{ recent_courses }}</h4>
+        </div>
+      </div>
 
-          <!-- Platform Overview -->
-          <div class="p-3">
-            <h6 class="fw-bold mb-3">📊 Platform Overview</h6>
-            <canvas id="platformChart"></canvas>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="row g-3">
+
+    <!-- LEFT -->
+    <div class="col-md-6">
+      <div class="course-card h-100">
+        <h6 class="fw-semibold mb-2">🏢 Departments</h6>
+        <canvas id="departmentChart"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-md-6 d-flex flex-column gap-3">
+
+      <div class="course-card">
+        <h6 class="fw-semibold mb-2">📊 Overview</h6>
+        <canvas id="platformChart"></canvas>
+      </div>
+
+      <div class="course-card">
+        <h6 class="fw-semibold mb-2">🏆 Top Courses</h6>
+
+        {% for item in top_courses|slice:":5" %}
+        <div class="mb-2">
+
+          <div class="d-flex justify-content-between small">
+            <span>{{ item.course.title|truncatechars:20 }}</span>
+            <span>{{ item.percentage }}%</span>
           </div>
 
-          <!-- Top Categories -->
-          {% if top_categories %}
-          <div class="p-3">
-            <h6 class="fw-bold mb-3">📚 Top Course Categories</h6>
-
-            {% for cat in top_categories %}
-            <div class="mb-3">
-              <div class="d-flex justify-content-between">
-                <span class="fw-semibold">{{ cat.name }}</span>
-                <small class="text-muted">
-                  {{ cat.enrollments }}
-                </small>
-              </div>
-
-              <div class="progress mt-1" style="height: 8px;">
-                <div class="progress-bar bg-success"
-                     style="width: {{ cat.percentage }}%;">
-                </div>
-              </div>
-
-              <small class="text-muted">
-                {{ cat.percentage }}%
-              </small>
+          <div class="progress" style="height:5px;">
+            <div class="progress-bar bg-success"
+                 style="width: {{ item.percentage }}%;">
             </div>
-            {% endfor %}
-
           </div>
-          {% endif %}
 
         </div>
+        {% endfor %}
 
       </div>
 
     </div>
+
   </div>
+
 </div>
-
-<!-- Top 5 Ranking (Full Width) -->
-<div class="row g-4 mt-4">
-  <div class="col-12">
-    <div class="chart-card p-4">
-      <h5 class="fw-bold mb-4">🏆 Top 5 Courses by Enrollment</h5>
-
-      {% if top_courses %}
-      <div class="table-responsive">
-        <table class="table align-middle">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Course</th>
-              <th>Enrollments</th>
-              <th>Popularity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in top_courses %}
-            <tr>
-              <td class="fw-bold text-primary">
-                {{ forloop.counter }}
-              </td>
-              <td class="fw-semibold">
-                {{ item.course.title }}
-              </td>
-              <td>
-                {{ item.enrollments }}
-              </td>
-              <td style="width:40%;">
-                <div class="progress" style="height: 8px;">
-                  <div class="progress-bar bg-success"
-                       style="width: {{ item.percentage }}%;">
-                  </div>
-                </div>
-                <small class="text-muted">
-                  {{ item.percentage }}%
-                </small>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <p class="text-muted">No courses available.</p>
-      {% endif %}
-
-    </div>
-  </div>
-</div>
-  </div>
 
 
 
