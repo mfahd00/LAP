@@ -1,188 +1,243 @@
-{% extends 'base.html' %}
-{% load humanize %}  
+﻿{% extends 'base.html' %}
+{% load humanize %}
 {% load custom_tags %}
+{% block title %}Course Detail | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-4">
 
+  <!-- COURSE HEADER -->
+  <div class="content-panel mb-4">
+      <div>
+        <h2 class="section-heading">{{ course.title }}</h2>
+        <p class="section-subheading mb-2">{{ course.description }}</p>
 
+        {% if avg_rating %}
+        <div class="mt-2">
+          <span class="status-pill pending">⭐ {{ avg_rating|floatformat:1 }} / 5</span>
+          <small class="text-muted ms-2">({{ feedbacks|length }} reviews)</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
 
-  <div class="overlay-box p-4 mb-5">
-  <h2 class="section-heading mb-3">{{ course.title }}</h2>
-  <p class="fs-5 mb-3">{{ course.description }}</p>
-
-  <p class="mb-4 d-flex align-items-center flex-wrap gap-2">
-  <strong>Category:</strong>
-  {% if course.category %}
-    <span class="badge badge-cat">{{ course.category.name }}</span>
-  {% else %}
-    <span class="badge badge-uncat">Uncategorized</span>
-  {% endif %}
-
-  {% if course.difficulty %}
-    {% if course.difficulty == "beginner" %}
-      <span class="badge badge-beg">Beginner</span>
-    {% elif course.difficulty == "intermediate" %}
-      <span class="badge badge-int">Intermediate</span>
-    {% elif course.difficulty == "hard" %}
-      <span class="badge badge-hard">Hard</span>
-    {% endif %}
-  {% endif %}
-  
-  <strong class="ms-3">Duration:</strong>
-  <span class="badge badge-cat text-dark">{{ course.duration_days }} days</span>
-</p>
-
-  {% if user.is_authenticated %}
-    {% if user.profile.is_instructor %}
-      {% if user == course.created_by %}
-        <p class="fw-semibold section-heading">👩‍🏫 You’re the instructor for this course.</p>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% if course.category %}
+        <span class="badge badge-cat">{{ course.category.name }}</span>
       {% else %}
-        <p class="fw-semibold section-heading">👨‍🏫 Instructor of this course is: {{ course.created_by.username }}</p>
+        <span class="badge badge-uncat">Uncategorized</span>
       {% endif %}
+
+      {% if course.difficulty == 'beginner' %}
+        <span class="badge badge-beg">Beginner</span>
+      {% elif course.difficulty == 'intermediate' %}
+        <span class="badge badge-int">Intermediate</span>
+      {% elif course.difficulty == 'hard' %}
+        <span class="badge badge-hard">Advanced</span>
+      {% endif %}
+
+      <span class="badge badge-cat">{{ course.duration_days }} days</span>
+    </div>
+
+    <!-- ROLE / ENROLL LOGIC -->
+    {% if user.is_authenticated %}
+
+      {% if user.profile.is_instructor %}
+        {% if user == course.created_by %}
+          <p class="mb-3">You are the instructor for this course.</p>
+        {% else %}
+          <p class="mb-3">Instructor: {{ course.created_by.username }}</p>
+        {% endif %}
+
+      {% elif user.profile.is_moderator %}
+        <div class="inline-empty">
+          Moderators cannot enroll in courses.
+        </div>
+
+      {% else %}
+        {% if enrolled %}
+          <p class="text-success fw-semibold">You are enrolled in this course.</p>
+
+          {% if enrollment.progress_percentage == 100 %}
+            <a href="{% url 'submit_feedback' course.id %}" class="btn btn-outline-primary btn-sm mt-2">
+              ⭐ Rate Course
+            </a>
+          {% else %}
+            <p class="text-muted small mt-2">
+              Complete the course to unlock feedback ({{ enrollment.progress_percentage }}%)
+            </p>
+          {% endif %}
+
+        {% else %}
+          <form action="{% url 'enroll_course' course.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn">Enroll Now</button>
+          </form>
+        {% endif %}
+      {% endif %}
+
     {% else %}
-      {% if enrolled %}
-        <p class="fw-semibold text-success">✅ You’re enrolled in this course.</p>
-      {% else %}
-        <form action="{% url 'enroll_course' course.id %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-primary px-4">Enroll Now</button>
-        </form>
-      {% endif %}
-    {% endif %}
-  {% else %}
-    <p>
-      <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-info px-4">
+      <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-primary">
         Login to Enroll
       </a>
-    </p>
-  {% endif %}
+    {% endif %}
 
-
+    <!-- INSTRUCTOR ACTIONS -->
     {% if user.is_authenticated and user.profile.is_instructor and user == course.created_by %}
-      <div class="d-flex flex-wrap gap-2 mt-3">
-        <a href="{% url 'create_lesson' course.id %}" class="btn btn-outline-success">➕ Add Lesson</a>
-        <a href="{% url 'edit_course' course.id %}" class="btn btn-outline-warning">✏️ Edit</a>
-        <a href="{% url 'delete_course' course.id %}" class="btn btn-outline-danger">🗑️ Delete</a>
+      <div class="d-flex gap-2 mt-3">
+        <a href="{% url 'edit_course' course.id %}" class="btn btn-primary btn-sm">Edit</a>
+        <a href="{% url 'delete_course' course.id %}" class="btn btn-danger btn-sm">Delete</a>
       </div>
     {% endif %}
   </div>
-  <div class="overlay-box p-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4 class="section-heading fw-semibold section-heading mb-0"> 📢 Announcements</h4>
 
-      {% if user.is_authenticated and user.profile.is_instructor and user == course.created_by %}
-        <a href="{% url 'create_announcement'%}" class="btn btn-outline-primary btn-sm">
-          ➕ New Announcement
-        </a>
+  <!-- ANNOUNCEMENTS -->
+  <div class="content-panel mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">Announcements</h4>
+      {% if user.profile.is_instructor and user == course.created_by %}
+        <a href="{% url 'create_announcement' %}" class="btn btn-sm btn-primary">New Announcement</a>
       {% endif %}
     </div>
 
-    {% if course.announcements.all %}
-      {% for ann in course.announcements.all %}
-        <div class=" mb-3 p-3 shadow-sm announcement-card">
-          <h5 class="fw-bold section-subheading">{{ ann.title }}</h5>
-          <p class="mb-2">{{ ann.message }}</p>
-          <small class="">
-            Posted {{ ann.created_at|naturaltime }} by {{ ann.created_by }}
-          </small>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-muted mb-0">No announcements yet.</p>
-    {% endif %}
-  </div>
-
-  
-  <div class="overlay-box p-4 mb-4">
-    <h4 class="section-heading mb-3">📘 Lessons</h4>
-    {% if lessons %}
-      <ul class="list-group list-group-flush">
-        {% for lesson in lessons %}
-          <li class="list-group-item bg-transparent border-0 border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap">
-            <div>
-              <strong class="course-title">{{ lesson.title }}</strong><br>
-              <small class="section-subheading">{{ lesson.content|truncatewords:25 }}</small>
-            </div>
-            {% if lesson.video_url %}
-    <a href="{{ lesson.video_url }}"
-       target="_blank"
-       class="btn btn-outline-info btn-sm">
-       🎥 Watch
-    </a>
-  {% endif %}
-
-  {% if lesson.material %}
-    <a href="{% url 'download_lesson_material' lesson.id %}"
-       class="btn btn-outline-primary btn-sm"
-       download>
-       ⬇ Download
-    </a>
-  {% endif %}
-          </li>
+    {% if course.announcements.exists %}
+      <div class="list-group list-group-flush">
+        {% for ann in course.announcements.all %}
+          <div class="list-group-item">
+            <h6 class="mb-1">{{ ann.title }}</h6>
+            <p class="mb-1">{{ ann.message }}</p>
+            <small class="text-muted">Posted {{ ann.created_at|naturaltime }} by {{ ann.created_by }}</small>
+          </div>
         {% endfor %}
-      </ul>
+      </div>
     {% else %}
-      <p class="text-muted mb-0">No lessons yet.</p>
+      <div class="inline-empty">No announcements yet.</div>
     {% endif %}
   </div>
 
-  <!-- 📝 Assignments -->
-  <div class="overlay-box p-4">
-  <h4 class="section-heading mb-3">📝 Assignments</h4>
-  {% if course.assignments.all %}
-    <ul class="list-group list-group-flush">
-      {% for assignment in course.assignments.all %}
-<li class="list-group-item bg-transparent border-0 border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap">
-  <div>
-    <strong class="course-title">{{ assignment.title }}</strong><br>
-    {% if assignment_due_dates %}
-      <small>Due: {{ assignment_due_dates|dict_get:assignment.id|date:"Y-m-d H:i"|default:"Not enrolled" }}</small>
-    {% else %}
-      <small>Due: {{ assignment.relative_due_days }} days after enrollment</small>
-    {% endif %}
-  </div>
-
-          {% if user.is_authenticated %}
-    {% if user.profile.is_instructor and user == course.created_by %}
-        <a href="{% url 'view_submissions' assignment.id %}" class="btn btn-outline-secondary btn-sm">📂 View</a>
-    {% else %}
-        {% if submissions|dict_get:assignment.id %}
-            <button class="btn btn-sm" style="background: linear-gradient(135deg, #0a58ca, #084bb5); color: #fff; cursor: default;">✅ Submitted</button>
-        {% else %}
-            <a href="{% url 'submit_assignment' assignment.id %}" class="btn btn-outline-info btn-sm">Submit</a>
-        {% endif %}
-    {% endif %}
-{% endif %}
-
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="text-muted mb-0">No assignments yet.</p>
-  {% endif %}
-</div>
-
-
-  {% if user.is_authenticated and user.profile.is_instructor and user == course.created_by %}
-    <div class="text-end mt-3">
-      <a href="{% url 'create_assignment' course.id %}" class="btn btn-success">➕ Add Assignment</a>
+  <!-- LESSONS -->
+  <div class="content-panel mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">Lessons</h4>
+      {% if user.profile.is_instructor and user == course.created_by %}
+        <a href="{% url 'create_lesson' course.id %}" class="btn btn-sm btn-primary">Add Lesson</a>
+      {% endif %}
     </div>
+
+    {% if lessons %}
+      <div class="list-group list-group-flush">
+        {% for lesson in lessons %}
+          <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <strong>{{ lesson.title }}</strong>
+              <div class="small text-muted">{{ lesson.content|truncatewords:25 }}</div>
+            </div>
+
+            <div class="d-flex gap-2">
+              {% if enrolled or is_instructor %}
+  {% if lesson.video_url %}
+    <a href="{{ lesson.video_url }}" target="_blank" class="btn btn-sm btn-outline-info">Watch</a>
   {% endif %}
+  {% if lesson.material %}
+    <a href="{% url 'download_lesson_material' lesson.id %}" class="btn btn-sm btn-outline-primary">Download</a>
+  {% endif %}
+{% else %}
+  <span class="status-pill pending">Enroll to access</span>
+{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="inline-empty">No lessons available yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- ASSIGNMENTS -->
+  <div class="content-panel mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">Assignments</h4>
+      {% if user.profile.is_instructor and user == course.created_by %}
+        <a href="{% url 'create_assignment' course.id %}" class="btn btn-sm btn-primary">New Assignment</a>
+      {% endif %}
+    </div>
+
+    {% if course.assignments.exists %}
+      <div class="list-group list-group-flush">
+        {% for assignment in course.assignments.all %}
+          <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <strong>{{ assignment.title }}</strong>
+
+              {% if assignment_due_dates %}
+                <div class="small text-muted">
+                  Due: {{ assignment_due_dates|dict_get:assignment.id|date:"Y-m-d H:i"|default:"Not enrolled" }}
+                </div>
+              {% else %}
+                <div class="small text-muted">
+                  Due: {{ assignment.relative_due_days }} days after enrollment
+                </div>
+              {% endif %}
+            </div>
+
+            <div>
+              {% if user.profile.is_instructor and user == course.created_by %}
+                <a href="{% url 'view_submissions' assignment.id %}" class="btn btn-sm btn-outline-secondary">
+                  View Submissions
+                </a>
+              {% else %}
+                {% if not enrolled %}
+  <span class="status-pill pending">Enroll to submit</span>
+
+{% elif submissions|dict_get:assignment.id %}
+  <span class="status-pill pending">Submitted</span>
+
+{% else %}
+  <a href="{% url 'submit_assignment' assignment.id %}" class="btn btn-sm btn-outline-info">
+    Submit
+  </a>
+{% endif %}
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="inline-empty">No assignments available yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="content-panel mt-4">
+    <h4 class="mb-3">Student Feedback</h4>
+
+    {% if feedbacks %}
+      <div class="d-flex flex-column gap-3">
+        {% for fb in feedbacks %}
+          <div class="p-3 rounded border">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong>{{ fb.student.username }}</strong>
+              <span class="status-pill pending">⭐ {{ fb.rating }}</span>
+            </div>
+
+            {% if fb.comment %}
+              <p class="mb-1 small text-muted">{{ fb.comment }}</p>
+            {% endif %}
+
+            <small class="text-muted">{{ fb.created_at|naturaltime }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="inline-empty">
+        {% if user.profile.is_instructor and user == course.created_by %}
+          No student feedback yet.
+        {% else %}
+          No feedback yet. Be the first to rate this course.
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
 
 </div>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.announcement-card {
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease;
-}
-.announcement-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-</style>
 {% endblock %}

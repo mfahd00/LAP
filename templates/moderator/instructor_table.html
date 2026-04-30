@@ -1,110 +1,111 @@
-<div class="table-responsive">
-  <table class="table align-middle shadow-sm mb-0 instructor-table">
+﻿<div class="table-shell">
+  <table class="table align-middle mb-0 instructor-table">
 
-    <thead class="table-gradient text-white">
+    <thead class=" text-white">
       <tr>
-        <th class="text-center" style="width:60px;">#</th>
-        <th class="ps-4">Instructor</th>
+        <th class="text-center">#</th>
+        <th class="ps-3">Instructor</th>
         <th>Email</th>
         <th class="text-center">Department</th>
         <th class="text-center">Verification</th>
-        <th class="text-center" style="width:130px;">Status</th>
-        <th class="text-center" style="width:260px;">Actions</th>
+        <th class="text-center">Status</th>
+        <th class="text-center">Actions</th>
       </tr>
     </thead>
 
     <tbody>
       {% for instructor in instructors %}
-      <tr>
+      <tr class="instructor-row">
 
-        <!-- Index -->
-        <td class="text-center fw-semibold">
-          {{ forloop.counter }}
-        </td>
+        <!-- INDEX -->
+        <td class="text-center fw-semibold">{{ forloop.counter }}</td>
 
-        <!-- Instructor Name -->
-        <td class="ps-4">
-          <div class="fw-semibold">
-            {{ instructor.user.username }}
+        <!-- PROFILE -->
+        <td class="ps-3">
+          <div class="d-flex align-items-center gap-2">
+
+            <img src="{{ instructor.profile_image_url }}"
+                 class="mini-avatar">
+
+            <div>
+              <div class="fw-semibold">{{ instructor.user.username }}</div>
+              <small class="text-muted">
+                Joined {{ instructor.user.date_joined|date:"M d, Y" }}
+              </small>
+            </div>
+
           </div>
-          <small class="text-muted">
-            Joined {{ instructor.user.date_joined|date:"M d, Y" }}
-          </small>
         </td>
 
-        <!-- Email -->
-        <td class="text-muted">
-          {{ instructor.user.email }}
-        </td>
+        <!-- EMAIL -->
+        <td class="text-muted small">{{ instructor.user.email }}</td>
 
-        <!-- Department -->
+        <!-- DEPARTMENT -->
         <td class="text-center">
           {% if instructor.department %}
-            <span class="dept-pill">
-              {{ instructor.department.name }}
-            </span>
+            <span class="dept-pill">{{ instructor.department.name }}</span>
           {% else %}
-            <span class="text-muted">—</span>
+            <span class="text-muted">-</span>
           {% endif %}
         </td>
 
-        <!-- Verification -->
         <td class="text-center">
-          {% if instructor.verification_document %}
-            <a href="{{ instructor.verification_document.url }}"
-               target="_blank"
-               class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-file-earmark-text me-1"></i>
-              View Doc
-            </a>
-          {% else %}
-            <span class="badge bg-light text-muted border">
-              Not Uploaded
-            </span>
-          {% endif %}
-        </td>
 
-        <!-- Status -->
+  {% if instructor.verification_document %}
+
+    {% if instructor.is_approved %}
+      <a href="{{ instructor.verification_document.url }}"
+         target="_blank"
+         class="btn btn-sm btn-outline-primary">
+        View
+      </a>
+    {% else %}
+      <a href="{{ instructor.verification_document.url }}"
+         target="_blank"
+         class="btn btn-sm btn-outline-success">
+        Verify
+      </a>
+    {% endif %}
+
+  {% else %}
+    <span class="badge bg-secondary">Missing</span>
+  {% endif %}
+
+</td>
+
+        <!-- STATUS -->
         <td class="text-center">
           {% if instructor.is_approved %}
-            <span class="status-pill approved">
-              Approved
-            </span>
+            <span class="status-pill approved">Approved</span>
           {% else %}
-            <span class="status-pill pending">
-              Pending
-            </span>
+            <span class="status-pill pending">Pending</span>
           {% endif %}
         </td>
 
-        <!-- Actions -->
+        <!-- ACTIONS -->
         <td class="text-center">
-          <div class="action-wrapper">
+          <div class="d-flex justify-content-center gap-2 flex-wrap">
 
             {% if not instructor.is_approved %}
-
-              <button type="button"
-                      class="btn btn-sm btn-success ajax-action"
-                      data-url="{% url 'approve_instructor' instructor.user.id %}">
+              <button class="btn btn-sm btn-outline-success action-btn ajax-action"
+                data-url="{% url 'approve_instructor' instructor.user.id %}">
                 Approve
               </button>
 
-              <button type="button"
-                      class="btn btn-sm btn-outline-danger ajax-action"
-                      data-url="{% url 'remove_instructor' instructor.user.id %}">
+              <button class="btn btn-sm btn-outline-primary action-btn ajax-action"
+                data-url="{% url 'remove_instructor' instructor.user.id %}">
                 Reject
               </button>
 
             {% else %}
 
               <a href="{% url 'instructor_detail' instructor.user.id %}"
-                 class="btn btn-sm btn-outline-primary">
+                 class="btn btn-sm btn-outline-primary action-btn">
                 View
               </a>
 
-              <button type="button"
-                      class="btn btn-sm btn-danger ajax-action"
-                      data-url="{% url 'remove_instructor' instructor.user.id %}">
+              <button class="btn btn-sm btn-outline-danger action-btn ajax-action"
+                data-url="{% url 'remove_instructor' instructor.user.id %}">
                 Remove
               </button>
 
@@ -117,9 +118,13 @@
 
       {% empty %}
       <tr>
-        <td colspan="7" class="text-center py-5 text-muted">
-          <div class="fw-semibold mb-1">No instructors found</div>
-          <small>Try adjusting your filters or search criteria.</small>
+        <td colspan="7" class="text-center py-5">
+
+          <div class="inline-empty">
+            <div class="fw-semibold mb-1">No instructors found</div>
+            <small>Try adjusting filters or search.</small>
+          </div>
+
         </td>
       </tr>
       {% endfor %}
@@ -127,63 +132,3 @@
 
   </table>
 </div>
-
-<style>
-.instructor-table th,
-.instructor-table td {
-  vertical-align: middle;
-}
-
-.table-gradient {
-  background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
-}
-
-.table tbody tr {
-  transition: background 0.2s ease;
-}
-
-.table tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-body.dark-mode .table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.dept-pill {
-  background: rgba(42, 125, 245, 0.12);
-  color: #2a7df5;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 500;
-}
-
-.status-pill {
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-pill.approved {
-  background: rgba(25, 135, 84, 0.15);
-  color: #198754;
-}
-
-.status-pill.pending {
-  background: rgba(255, 193, 7, 0.2);
-  color: #b8860b;
-}
-
-.action-wrapper {
-  display: inline-flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-}
-
-.action-wrapper .btn {
-  min-width: 90px;
-}
-</style>

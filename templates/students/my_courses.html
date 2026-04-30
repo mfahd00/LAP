@@ -1,136 +1,134 @@
-{% extends "base.html" %}
+﻿{% extends 'base.html' %}
 {% block title %}My Courses | LAP{% endblock %}
 
 {% block content %}
+<div class="container py-4">
+  <div class="my-courses-hero mb-4">
+    <div>
+      <h2 class="section-heading">My Learning Journey</h2>
+      <p class="section-subheading mb-0">A professional overview of your enrolled courses, progress, and completion status.</p>
+    </div>
+    <div class="my-courses-count">
+      <span>Total Enrollments</span>
+      <strong>{{ enrollments|length }}</strong>
+    </div>
+  </div>
 
-<div class="container py-5">
+  <div class="content-panel mb-4">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-6 col-lg-5">
+        <label for="searchInput" class="form-label small mb-1">Search Courses</label>
+        <input type="text" id="searchInput" class="form-control" placeholder="Search by course name or instructor">
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label for="statusFilter" class="form-label small mb-1">Status</label>
+        <select id="statusFilter" class="form-select">
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="verified">Verified</option>
+        </select>
+      </div>
+      <div class="col-md-2 col-lg-2">
+        <div class="my-courses-hint small text-muted">Tip: use search + status for quick tracking.</div>
+      </div>
+    </div>
+  </div>
 
-<h3 class="fw-bold text-center mb-5 section-heading">
-My Enrolled Courses
-</h3>
+  <div id="coursesGrid" class="row g-4">
+    {% for enrollment in enrollments %}
+      <div class="col-md-6 course-item" data-name="{{ enrollment.course.title|lower }} {{ enrollment.course.created_by.username|lower }}" data-status="{{ enrollment.status }}">
+        <article class="my-course-card h-100">
+          <div class="my-course-card-head">
+            <div>
+              <h5 class="mb-1">{{ enrollment.course.title }}</h5>
+              <p class="small text-muted mb-0">Instructor: {{ enrollment.course.created_by.username }}</p>
+            </div>
+            <span class="status-chip status-{{ enrollment.status }}">{{ enrollment.status|title }}</span>
+          </div>
 
-{% if enrollments %}
+          <div class="my-course-meta">
+            <span>Enrolled {{ enrollment.enrolled_at|date:"M d, Y" }}</span>
+            <span>Ends {{ enrollment.expiry_date|date:"M d, Y" }}</span>
+          </div>
 
-<div class="row g-4">
+          <div class="my-course-progress-wrap">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong class="small">Progress</strong>
+              <span class="small fw-semibold">{{ enrollment.progress_percentage }}%</span>
+            </div>
+            <div class="progress my-course-progress">
+              <div class="progress-bar" role="progressbar" style="width: {{ enrollment.progress_percentage }}%;" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ enrollment.progress_percentage }}"></div>
+            </div>
+          </div>
 
-{% for enrollment in enrollments %}
+          <div class="my-course-stats">
+            <div class="mini-stat">
+              <span>Completed</span>
+              <strong>{{ enrollment.completed_assignments }}/{{ enrollment.total_assignments }}</strong>
+            </div>
+            <div class="mini-stat">
+              <span>Pending</span>
+              <strong>{{ enrollment.pending_assignments }}</strong>
+            </div>
+          </div>
 
-<div class="col-md-4">
+          <div class="my-course-actions">
+            <a href="{% url 'course_detail' enrollment.course.id %}" class="btn btn-sm">Open Course</a>
+            {% if enrollment.status == "verified" %}
+              <a href="{% url 'download_certificate' enrollment.id %}" class="btn btn-sm btn-primary">Download Certificate</a>
+            {% endif %}
+          </div>
+        </article>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="overlay-box text-center py-5">
+          <h5 class="mb-2">No courses yet</h5>
+          <p class="text-muted mb-0">Enroll in a course to see your professional progress dashboard here.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
 
-<div class="course-card h-100 d-flex flex-column">
-
-<div class="course-card-body d-flex flex-column">
-
-<h5 class="course-title mb-2">
-{{ enrollment.course.title }}
-</h5>
-
-<p class="text-muted small mb-3">
-Enrolled on {{ enrollment.enrolled_at|date:"M d, Y" }}
-</p>
-
-<div class="progress mb-2" style="height:8px;">
-
-<div class="progress-bar
-{% if enrollment.progress_percentage < 40 %}
-bg-danger
-{% elif enrollment.progress_percentage < 75 %}
-bg-warning
-{% else %}
-bg-success
-{% endif %}
-"
-style="width: {{ enrollment.progress_percentage }}%;">
+  <div id="noResultsState" class="overlay-box text-center py-5 mt-3 d-none">
+    <h5 class="mb-2">No matching courses</h5>
+    <p class="text-muted mb-0">Try a different search term or change the selected status filter.</p>
+  </div>
 </div>
+{% endblock %}
 
-</div>
+{% block extra_js %}
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const courseItems = document.querySelectorAll('.course-item');
+  const noResultsState = document.getElementById('noResultsState');
 
-<p class="small fw-semibold mb-3">
-{{ enrollment.progress_percentage }}% Completed
-</p>
+  function applyFilters() {
+    const searchTerm = (searchInput.value || '').toLowerCase().trim();
+    const selectedStatus = statusFilter.value;
+    let visibleCount = 0;
 
-{% if enrollment.progress_percentage == 100 %}
+    courseItems.forEach((item) => {
+      const name = item.dataset.name || '';
+      const status = item.dataset.status || '';
+      const matchesSearch = name.includes(searchTerm);
+      const matchesStatus = selectedStatus === 'all' || status === selectedStatus;
+      const show = matchesSearch && matchesStatus;
 
-<div class="alert alert-success py-2 small mb-3">
+      item.classList.toggle('d-none', !show);
+      if (show) visibleCount += 1;
+    });
 
-<strong>Course Completed 🎓</strong>
+    if (noResultsState) {
+      noResultsState.classList.toggle('d-none', visibleCount > 0 || courseItems.length === 0);
+    }
+  }
 
-{% if enrollment.course_result and enrollment.course_result.graded %}
-
-<br>
-Final Score:
-<strong>{{ enrollment.course_result.total_marks }}/100</strong>
-
-{% else %}
-
-<br>
-Awaiting instructor result.
-
-{% endif %}
-
-</div>
-
-{% endif %}
-
-<div class="mt-auto">
-
-{% if enrollment.course_result and enrollment.course_result.graded %}
-
-<a href="{% url 'course_detail' enrollment.course.id %}"
-class="btn btn-outline-primary w-100 mb-2">
-
-View Course
-
-</a>
-
-<a href="{% url 'download_certificate' enrollment.id %}"
-class="btn btn-outline-success w-100">
-
-<i class="bi bi-award"></i> Download Certificate
-
-</a>
-
-{% else %}
-
-<a href="{% url 'course_detail' enrollment.course.id %}"
-class="btn btn-gradient w-100 mb-2">
-
-Continue Learning
-
-</a>
-
-{% endif %}
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-{% endfor %}
-
-</div>
-
-{% else %}
-
-<div class="text-center py-5">
-
-<i class="bi bi-journal-x fs-1 d-block mb-3 opacity-50"></i>
-
-<p class="text-muted mb-3">
-You have not enrolled in any courses yet.
-</p>
-
-<a href="{% url 'course_list' %}" class="btn btn-outline-primary">
-Browse Courses
-</a>
-
-</div>
-
-{% endif %}
-
-</div>
-
+  if (searchInput && statusFilter) {
+    searchInput.addEventListener('input', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+  }
+</script>
 {% endblock %}

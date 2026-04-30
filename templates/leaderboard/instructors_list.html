@@ -1,0 +1,149 @@
+﻿{% extends 'base.html' %}
+{% block title %}Instructors | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="instructor-directory-hero mb-4">
+    <div>
+      <h2 class="section-heading">Instructor Directory</h2>
+      <p class="section-subheading mb-0">Explore verified instructors, compare class impact, and open detailed profiles.</p>
+    </div>
+
+    <div class="directory-kpis">
+      <div class="directory-kpi">
+        <span>Instructors</span>
+        <strong>{{ instructors|length }}</strong>
+      </div>
+      <div class="directory-kpi">
+        <span>Departments</span>
+        <strong>{{ departments|length }}</strong>
+      </div>
+      <div class="directory-kpi">
+        <span>Sort Mode</span>
+        <strong>
+          {% if selected_sort == 'students' %}Students
+          {% elif selected_sort == 'courses' %}Courses
+          {% else %}Name
+          {% endif %}
+        </strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-panel mb-4">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5 col-lg-4">
+        <label for="searchInput" class="form-label small mb-1">Search</label>
+        <input type="text" id="searchInput" class="form-control" placeholder="Search by instructor or department">
+      </div>
+
+      <div class="col-md-3 col-lg-3">
+        <label for="departmentFilter" class="form-label small mb-1">Department</label>
+        <select id="departmentFilter" name="department" class="form-select">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+            <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 col-lg-3">
+        <label for="sortFilter" class="form-label small mb-1">Sort</label>
+        <select id="sortFilter" name="sort" class="form-select">
+          <option value="default" {% if selected_sort == "default" %}selected{% endif %}>Name</option>
+          <option value="students" {% if selected_sort == "students" %}selected{% endif %}>Most Students</option>
+          <option value="courses" {% if selected_sort == "courses" %}selected{% endif %}>Most Courses</option>
+        </select>
+      </div>
+
+      <div class="col-md-1 col-lg-1 d-grid">
+        <button class="btn" type="submit">Go</button>
+      </div>
+
+      <div class="col-md-12 col-lg-1 d-grid">
+        <a href="{% url 'instructors_list' %}" class="btn btn-outline-secondary">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="row g-4" id="instructorGrid">
+    {% for item in instructors %}
+      <div class="col-md-6 col-xl-4 instructor-item" data-name="{{ item.instructor.username|lower }} {% if item.instructor.profile.department %}{{ item.instructor.profile.department.name|lower }}{% endif %}">
+        <article class="instructor-directory-card h-100">
+          <div class="instructor-card-head">
+            <span class="instructor-rank">#{{ forloop.counter }}</span>
+            {% if forloop.first and selected_sort != 'default' %}
+              <span class="instructor-highlight">Top</span>
+            {% endif %}
+          </div>
+
+          <div class="text-center mb-3">
+            <img src="{{ item.instructor.profile.profile_image_url }}" class="profile-img mb-2" alt="Instructor profile">
+            <h5 class="mb-1">{{ item.instructor.username }}</h5>
+            <p class="small text-muted mb-0">
+              {% if item.instructor.profile.department %}
+                {{ item.instructor.profile.department.name }}
+              {% else %}
+                Department not specified
+              {% endif %}
+            </p>
+          </div>
+
+          <div class="instructor-stats">
+            <div>
+              <span>Courses</span>
+              <strong>{{ item.course_count }}</strong>
+            </div>
+            <div>
+              <span>Students</span>
+              <strong>{{ item.students }}</strong>
+            </div>
+          </div>
+
+          <a href="{% url 'instructor_detail' item.instructor.id %}" class="btn btn-sm w-100 mt-3">View Profile</a>
+        </article>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="overlay-box text-center py-5">
+          <h5 class="mb-2">No instructors found</h5>
+          <p class="text-muted mb-0">Try changing filters or sorting to explore available instructors.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div id="noInstructorResults" class="overlay-box text-center py-5 mt-3 d-none">
+    <h5 class="mb-2">No matching instructors</h5>
+    <p class="text-muted mb-0">Try another search keyword.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const instructorItems = document.querySelectorAll('.instructor-item');
+  const noInstructorResults = document.getElementById('noInstructorResults');
+
+  function filterInstructors() {
+    const query = (searchInput.value || '').toLowerCase().trim();
+    let visibleCount = 0;
+
+    instructorItems.forEach((item) => {
+      const name = item.dataset.name || '';
+      const show = name.includes(query);
+      item.classList.toggle('d-none', !show);
+      if (show) visibleCount += 1;
+    });
+
+    if (noInstructorResults) {
+      noInstructorResults.classList.toggle('d-none', visibleCount > 0 || instructorItems.length === 0);
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', filterInstructors);
+  }
+</script>
+{% endblock %}

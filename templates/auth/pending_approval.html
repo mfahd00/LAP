@@ -1,17 +1,12 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Pending Approval | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-5 d-flex justify-content-center align-items-center">
-  <div class="card shadow-lg p-4 rounded-4 text-center" style="max-width: 480px; width: 100%;">
-    <h3 class="fw-bold mb-3">Instructor Registration Submitted</h3>
-    <p class="text-muted mb-4">
-      ⏳ Your account is awaiting moderator approval.  
-      You’ll be notified once your registration is approved.
-    </p>
-    <a href="{% url 'login_instructor' %}" class="btn btn-gradient  px-4 py-2 mt-2">
-      Back to Login
-    </a>
+<div class="auth-shell">
+  <div class="auth-card auth-card-sm text-center">
+    <h2 class="section-heading mb-2">Registration Submitted</h2>
+    <p class="auth-subtitle mb-3">Your instructor account is awaiting moderator approval. You will be able to log in once approved.</p>
+    <a href="{% url 'login' %}" class="btn">Back to Login</a>
   </div>
 </div>
 {% endblock %}

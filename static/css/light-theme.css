@@ -1,198 +1,158 @@
-
-
-body {
-  background-color: #c8e0f8;
-  color: #222;
+﻿:root {
+  --color-bg: #a9cdfa;
+  --color-bg-alt: #f6f9fd;
+  --color-surface: #e3edfb;
+  --color-surface-soft: #f4f8ff;
+  --color-border: rgba(73, 107, 164, 0.24);
+  --color-text: #102645;
+  --color-text-muted: #4e6486;
+  --color-placeholder: #6a7f9d;
+  --color-on-accent: #ffffff;
+  --color-accent: #0f7ee0;
+  --color-accent-strong: #0a66b7;
+  --color-accent-soft: rgba(15, 126, 224, 0.1);
+  --color-success: #079a76;
+  --color-warning: #be8900;
+  --color-danger: #dc3e3e;
+  --gradient-accent: linear-gradient(135deg, #0f7ee0 0%, #0ea98f 100%);
+  --gradient-bg: radial-gradient(circle at 15% -10%, rgba(30, 134, 233, 0.2) 0%, transparent 52%),
+    radial-gradient(circle at 85% 0%, rgba(14, 169, 143, 0.18) 0%, transparent 45%),
+    linear-gradient(180deg, var(--color-bg-alt) 0%, var(--color-bg) 100%);
+}
+/* ── Light theme pill/badge overrides ── */
+body.light-theme .badge-cat {
+  background: rgba(30, 136, 229, 0.12);
+  color: #1565c0;
+  border-color: rgba(30, 136, 229, 0.3);
 }
 
-.navbar {
-  background-color: #ffffff;
-  color: #222;
-  border-bottom: 1px solid #ddd;
+body.light-theme .badge-uncat {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+  border-color: rgba(100, 116, 139, 0.3);
 }
 
-.navbar .nav-link {
-  color: #333 !important;
+body.light-theme .badge-beg {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+  border-color: rgba(20, 184, 166, 0.3);
 }
 
-.navbar .nav-link:hover {
-  color: #007bff !important;
+body.light-theme .badge-int {
+  background: rgba(202, 138, 4, 0.12);
+  color: #92400e;
+  border-color: rgba(202, 138, 4, 0.3);
 }
 
-.navbar-brand {
-  color: #007bff !important;
+body.light-theme .badge-hard {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.28);
 }
 
-.btn {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+body.light-theme .status-pill.approved {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+  border-color: rgba(20, 184, 166, 0.3);
 }
 
-.btn:hover {
-  background-color: #0056b3;
-  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+body.light-theme .status-pill.pending {
+  background: rgba(202, 138, 4, 0.12);
+  color: #92400e;
+  border-color: rgba(202, 138, 4, 0.3);
 }
 
-.btn-outline-info {
-  border: 1px solid #007bff;
-  color: #007bff;
+body.light-theme .assignment-chip.pending {
+  background: rgba(202, 138, 4, 0.12);
+  color: #92400e;
+  border-color: rgba(202, 138, 4, 0.3);
 }
 
-.btn-outline-info:hover {
-  background-color: #007bff;
-  color: #fff;
+body.light-theme .assignment-chip.review {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.28);
 }
 
-.course-card {
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  color: #222;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+body.light-theme .assignment-chip.approved {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+  border-color: rgba(20, 184, 166, 0.3);
 }
 
-.course-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+body.light-theme .assignment-chip.rejected {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.28);
 }
 
-.overlay-box {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 1rem;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
-  width: 90%;
-  margin: auto;
-  backdrop-filter: blur(6px);
-  transition: box-shadow 0.4s ease;
+body.light-theme .status-chip.status-pending {
+  background: rgba(202, 138, 4, 0.12);
+  color: #92400e;
+  border-color: rgba(202, 138, 4, 0.3);
 }
 
-.overlay-box:hover {
-  box-shadow: 0 10px 35px rgba(0, 123, 255, 0.3);
+body.light-theme .status-chip.status-completed {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.28);
 }
 
-.hero h1 {
-  color: #0057b5;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+body.light-theme .status-chip.status-verified {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+  border-color: rgba(20, 184, 166, 0.3);
 }
 
-.section-heading {
-  color: #0057b5;
+body.light-theme .rank-pill.gold,
+body.light-theme .lb2-rank.gold {
+  background: rgba(161, 98, 7, 0.12);
+  color: #92400e;
+  border-color: rgba(161, 98, 7, 0.3);
 }
 
-.section-subheading {
-  color: #000;
+body.light-theme .rank-pill.silver,
+body.light-theme .lb2-rank.silver {
+  background: rgba(100, 116, 139, 0.12);
+  color: #334155;
+  border-color: rgba(100, 116, 139, 0.3);
 }
 
-.divider {
-  border-color: rgba(0, 0, 0, 0.1);
+body.light-theme .rank-pill.bronze,
+body.light-theme .lb2-rank.bronze {
+  background: rgba(194, 65, 12, 0.1);
+  color: #9a3412;
+  border-color: rgba(194, 65, 12, 0.28);
 }
 
-footer {
-  background-color: #ffffff;
-  color: #333;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+body.light-theme .assignment-time.good {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
 }
 
-
-.course-title,
-.course-title-link {
-  color: #0057b5; 
-  transition: color 0.3s ease, text-shadow 0.3s ease;
+body.light-theme .assignment-time.overdue {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
 }
 
-.course-title-link:hover {
-  color: #0056b3;
-  text-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
-  text-decoration: none;
+/* 🔴 Rejected feedback box */
+.assignment-card.rejected .assignment-feedback {
+  background: rgba(255, 0, 0, 0.06);
+  color: #842029; /* strong readable red */
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 500;
 }
 
-.lap-text {
-  color: #000; 
-}
-
-.badge-cat {
-  background-color: #d0e8ff;  
-  color: #004085;            
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.badge-uncat {
-  background-color: #f0f0f0;  
-  color: #555;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.warning {
-  color: #9f6d00;
-}
-
-input, select, textarea {
-  background-color: #2a2f3a;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #ffffff;
-  opacity: 0.85;
-}
-
-select {
-  color: #ffffff;
-  background-color: #2a2f3a;
-}
-
-option {
-  background-color: #2a2f3a;
-  color: #ffffff;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: #00c4ff;
-  background-color: #2e3440;
-  box-shadow: 0 0 0 0.2rem rgba(0, 196, 255, 0.25);
-  outline: none;
-}
-
-.badge-beg {
-  background-color: #a4e3a5;  
-  color: #026117;                
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.badge-int {
-  background-color: #e3dfa4;  
-  color: #615102;                
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.badge-hard {
-  background-color: #e3a4a4;  
-  color: #610202;                
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* Sidebar override - prevent theme files from breaking sidebar */
-.sidebar {
-  width: 68px !important;
-  overflow: hidden !important;
-}
-
-.sidebar:hover {
-  width: 240px !important;
-}
-
-.theme-switch {
-  width: 46px !important;
-  height: 24px !important;
-  flex-shrink: 0 !important;
-  padding: 0 !important;
+/* 🔴 Max attempts text */
+.assignment-card.rejected .assignment-final {
+  display: block;
+  background: #ffe5e5;
+  color: #b02a37;
+  border: 1px solid #f5c2c7;
+  text-align: center;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
 }

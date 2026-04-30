@@ -1,45 +1,48 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+{% block title %}Submission History | LAP{% endblock %}
 
 {% block content %}
-  <div class="container py-4">
-    <h3 class="mb-4">Submission History – {{ student.username }}</h3>
-
-    <div class="card shadow-sm">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Attempt</th>
-            <th>Submitted</th>
-            <th>Status</th>
-            <th>Marks</th>
-            <th>Feedback</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {% for submission in submissions %}
-            <tr>
-              <td>{{ forloop.counter }}</td>
-
-              <td>{{ submission.submitted_at|date:'M d, Y H:i' }}</td>
-
-              <td>
-                {% if submission.status == 'approved' %}
-                  <span class="badge bg-success">Approved</span>
-                {% elif submission.status == 'rejected' %}
-                  <span class="badge bg-danger">Rejected</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">Submitted</span>
-                {% endif %}
-              </td>
-
-              <td>{{ submission.marks|default:'-' }}/10</td>
-
-              <td>{{ submission.feedback|default:'-' }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="container py-4">
+  <div class="page-title-row">
+    <div>
+      <h3 class="section-heading">Submission History</h3>
+      <p class="section-subheading mb-0">{{ student.username }}</p>
     </div>
   </div>
+
+  <div class="table-shell">
+    <table class="table align-middle">
+      <thead class="table-gradient text-white">
+        <tr>
+          <th>Attempt</th>
+          <th>Submitted</th>
+          <th>Status</th>
+          <th>Marks</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in submissions %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ submission.submitted_at|date:'M d, Y H:i' }}</td>
+            <td>
+              {% if submission.status == 'approved' %}
+                <span class="badge bg-success">Approved</span>
+              {% elif submission.status == 'rejected' %}
+                <span class="badge bg-danger">Rejected</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Submitted</span>
+              {% endif %}
+            </td>
+            <td>{{ submission.marks|default:'-' }}/10</td>
+            <td>{{ submission.feedback|default:'-' }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No submissions found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

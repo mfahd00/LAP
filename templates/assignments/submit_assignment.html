@@ -1,9 +1,21 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+{% block title %}Submit Assignment | LAP{% endblock %}
+
 {% block content %}
-<h2>Submit Assignment: {{ assignment.title }}</h2>
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+<div class="container py-4">
+  <div class="auth-shell" style="min-height:auto;">
+    <div class="auth-card">
+      <div class="mb-4 text-center">
+        <h2 class="section-heading">Submit Assignment</h2>
+        <p class="auth-subtitle mb-0">{{ assignment.title }}</p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn w-100">Submit</button>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

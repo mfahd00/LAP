@@ -1,82 +1,31 @@
-{% extends 'base.html' %}
-{% block title %}Review Submission{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Review Submission | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-5 d-flex justify-content-center">
-  <div class="overlay-box p-4 shadow-sm" style="max-width: 500px; width:100%; border-radius: 12px;">
-    
-    <h4 class="fw-bold mb-4 text-center">
-      Review Submission
-    </h4>
-
-    <p class="text-center mb-1">
-      <strong>Student:</strong> {{ submission.enrollment.student.username }}
-    </p>
-
-    <p class="text-center small text-muted">
-      Submitted: {{ submission.submitted_at|date:"M d, Y H:i" }}
-    </p>
-
-    {% if due_date %}
-      <p class="text-center small">
-        <strong>Due Date:</strong> {{ due_date|date:"M d, Y H:i" }}
-      </p>
-    {% endif %}
-
-    {% if is_late %}
-      <div class="alert alert-danger text-center mt-3">
-        ⚠ Late Submission
-      </div>
-    {% endif %}
-
-    <hr>
-
-    <form method="POST">
-      {% csrf_token %}
-
-      <div class="mb-3">
-        <label class="form-label fw-semibold">
-          Enter Marks (out of 10)
-        </label>
-        <input type="number"
-               name="marks"
-               min="0"
-               max="10"
-               class="form-control"
-               placeholder="Enter marks if approving">
+<div class="container py-4">
+  <div class="auth-shell" style="min-height:auto;">
+    <div class="auth-card auth-card-sm">
+      <div class="text-center mb-3">
+        <h3 class="section-heading">Review Submission</h3>
+        <p class="auth-subtitle mb-0">{{ submission.enrollment.student.username }} • {{ submission.submitted_at|date:"M d, Y H:i" }}</p>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label fw-semibold">
-          Rejection Reason (only if rejecting)
-        </label>
-        <textarea name="reason"
-                  rows="3"
-                  class="form-control"
-                  placeholder="Provide reason if rejecting..."></textarea>
-      </div>
+      {% if due_date %}<p class="small text-muted mb-2">Due date: {{ due_date|date:"M d, Y H:i" }}</p>{% endif %}
+      {% if is_late %}<div class="alert alert-danger py-2">Late submission</div>{% endif %}
 
-      <div class="d-flex justify-content-between">
-        <a href="{% url 'view_submissions' submission.assignment.id %}"
-           class="btn btn-outline-secondary">
-           Cancel
-        </a>
-
-        <div>
-          <button type="submit"
-                  formaction="{% url 'reject_submission' submission.id %}"
-                  class="btn btn-danger me-2">
-            Reject
-          </button>
-
-          <button type="submit"
-                  class="btn btn-success">
-            Approve
-          </button>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Marks (out of 10)</label>
+          <input type="number" name="marks" min="0" max="10" class="form-control" placeholder="Enter marks for approval">
         </div>
-      </div>
-    </form>
 
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'view_submissions' submission.assignment.id %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-success">Approve</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

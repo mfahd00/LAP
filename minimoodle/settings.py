@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'courses',
     'widget_tweaks',
     'django.contrib.humanize',
+    'django_extensions',
 
 ]
 

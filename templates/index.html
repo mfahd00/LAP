@@ -1,83 +1,114 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Home | LAP{% endblock %}
 
 {% block content %}
+<section class="hero-section">
+  <div class="container-fluid px-0">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-6">
+        <div class="overlay-box p-4 p-lg-5">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-3">Enterprise-ready learning portal</span>
+          <h2 class="section-heading mb-3">Learn with clarity. <span class="lap-text">Track with confidence.</span></h2>
+          <p class="section-subheading mb-4">
+            LAP gives students, instructors, and moderators one polished workspace for courses, assignments, analytics, and announcements.
+          </p>
 
+          <div class="d-flex flex-wrap gap-2 ">
+            {% if not user.is_authenticated %}
+              <a href="{% url 'register' %}" class="btn btn-primary" >Create Account</a>
+              <a href="{% url 'login' %}" class="btn btn-primary">Sign In</a>
+            {% else %}
+              <a href="{% url 'dashboard' %}" class="btn btn-primary">Open Dashboard</a>
+              <a href="{% url 'course_list' %}" class="btn btn-primary">Browse Courses</a>
+            {% endif %}
+          </div>
 
-<div class="hero text-center">
-  <div class="overlay-box p-5">
-    <div class="container py-5">
-      <h1 class="display-5 fw-bold">
-        Welcome to <span class="lap-text">LAP</span>!
-      </h1>
-      <p class="fs-5 text-secondary">Empowering learning with simplicity and style.</p>
-
-      {% if not user.is_authenticated %}
-      <a href="{% url 'register' %}" class="btn btn-primary btn-lg mt-3">Join Now</a>
-      {% else %}
-      <a href="{% url 'course_list' %}" class="btn btn-success btn-lg mt-3">Explore Courses</a>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-
-<section class="mb-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold section-heading">Latest Courses</h3>
-    <a href="{% url 'course_list' %}" class="btn btn-outline-info btn-sm px-3">View All</a>
-  </div>
-
-  <div class="row g-4">
-    {% for course in latest_courses %}
-    <div class="col-md-6">
-      <div class="course-card h-100 d-flex align-items-center p-4">
-        <div class="flex-grow-1">
-          <h5 class="fw-bold text-info mb-2">
-            <a href="{% url 'course_detail' course.id %}" class="text-decoration-none course-title-link">
-              {{ course.title }}
-            </a>
-          </h5>
-          <p class="text-secondary small fw-semibold">{{ course.description|truncatewords:25 }}</p>
-          {% if course.category %}
-          <span class="badge badge-cat">{{ course.category.name }}</span>
-          {% else %}
-          <span class="badge badge-uncat">Uncategorized</span>
-          {% endif %}
-        </div>
-        <div class="ms-3 text-end">
-          <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-info btn-sm">View</a>
+          <div class="row g-3 mt-1">
+            <div class="col-sm-4">
+              <div class="stat-box text-center">
+                <div class="small text-muted">Structured</div>
+                <strong>Course Flow</strong>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-box text-center">
+                <div class="small text-muted">Faster</div>
+                <strong>Approvals</strong>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-box text-center">
+                <div class="small text-muted">Real-time</div>
+                <strong>Progress</strong>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <div class="col-lg-6 text-center">
+        <img src="{% static 'images/hero-student02.png' %}" alt="Learning dashboard" class="hero-img" />
+      </div>
     </div>
-    {% empty %}
-    <p class="text-secondary">No courses available yet.</p>
-    {% endfor %}
   </div>
 </section>
 
-<hr class="my-5 divider">
-
-
-<section class="mb-5">
-  <h3 class="fw-bold section-heading text-center">Browse by Category</h3>
-  <div class="row g-4 justify-content-center">
-    {% for category in categories %}
-    <div class="col-md-3 col-sm-6 col-10">
-      <div class="course-card h-100 text-center p-4">
-        <div class="mb-3">
-          <i class="bi bi-folder-fill fs-3 text-info"></i>
-        </div>
-        <h5 class="fw-semibold mb-2">{{ category.name }}</h5>
-        <a href="{% url 'courses_by_category' category.id %}" class="btn btn-outline-info btn-sm mt-2 px-3">View
-          Courses</a>
+<section class="mt-4">
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="feature-box h-100">
+        <i class="bi bi-journals fs-4 mb-2 d-inline-block"></i>
+        <h5 class="mb-2">Organized Learning</h5>
+        <p class="mb-0 section-subheading">Keep lessons, assignments, and materials in one unified learning path.</p>
       </div>
     </div>
-    {% empty %}
-    <p class="text-secondary text-center">No categories added yet.</p>
-    {% endfor %}
+
+    <div class="col-md-4">
+      <div class="feature-box h-100">
+        <i class="bi bi-graph-up-arrow fs-4 mb-2 d-inline-block"></i>
+        <h5 class="mb-2">Actionable Analytics</h5>
+        <p class="mb-0 section-subheading">See completion trends, submission quality, and classroom performance quickly.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="feature-box h-100">
+        <i class="bi bi-people fs-4 mb-2 d-inline-block"></i>
+        <h5 class="mb-2">Role-ready Experience</h5>
+        <p class="mb-0 section-subheading">Students, instructors, and moderators each get focused workflows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mt-4">
+  <div class="overlay-box p-4">
+    <h4 class="section-heading mb-3">How LAP works</h4>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="step-box h-100">
+          <div class="small text-muted mb-1">Step 1</div>
+          <strong>Join and choose a role</strong>
+          <p class="mb-0 mt-2 section-subheading">Register as student or instructor and start from your dashboard.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="step-box h-100">
+          <div class="small text-muted mb-1">Step 2</div>
+          <strong>Learn or manage</strong>
+          <p class="mb-0 mt-2 section-subheading">Access coursework, track deadlines, and review submissions with ease.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="step-box h-100">
+          <div class="small text-muted mb-1">Step 3</div>
+          <strong>Measure outcomes</strong>
+          <p class="mb-0 mt-2 section-subheading">Use reports and course insights to continuously improve learning.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 {% endblock %}

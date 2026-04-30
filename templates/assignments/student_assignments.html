@@ -1,249 +1,256 @@
-{% extends 'base.html' %}
-{% load static %}
+﻿{% extends 'base.html' %}
 {% load custom_tags %}
 {% block title %}My Assignments | LAP{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-
-  <div class="text-center mb-5">
-    <h2 class="fw-bold section-heading mb-2">My Assignments</h2>
-    <p class="section-subheading mb-0">
-      Stay on track — view, submit, and review your tasks.
-    </p>
+  <div class="my-assignments-hero mb-4">
+    <div>
+      <h2 class="section-heading">My Assignments</h2>
+      <p class="section-subheading mb-0">Professional assignment tracking for deadlines, submissions, and review outcomes.</p>
+    </div>
   </div>
 
-  <!-- ================= Pending ================= -->
-  <div class="mb-5">
-    <h4 class="warning mb-3">⏳ Pending Assignments</h4>
+  <div class="content-panel mb-4">
+  <div class="row g-3 align-items-end">
+
+    <!-- Search -->
+    <div class="col-md-6 col-lg-4">
+      <label for="assignmentSearch" class="form-label small mb-1">Search Assignments</label>
+      <input type="text" id="assignmentSearch" class="form-control" placeholder="Search by assignment title or course">
+    </div>
+
+    <!-- Filter -->
+    <div class="col-md-4 col-lg-3">
+      <label for="assignmentStatus" class="form-label small mb-1">Section</label>
+      <select id="assignmentStatus" class="form-select">
+        <option value="all">All Sections</option>
+        <option value="pending">Pending</option>
+        <option value="submitted">Submitted</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+
+    <!-- 🔥 KPI INLINE -->
+    <div class="col-lg-5">
+      <div class="assignment-kpi-row justify-content-lg-end">
+        <div class="assignment-kpi">
+          <span>Pending</span>
+          <strong>{{ pending_assignments|length }}</strong>
+        </div>
+        <div class="assignment-kpi">
+          <span>Submitted</span>
+          <strong>{{ submitted_assignments|length }}</strong>
+        </div>
+        <div class="assignment-kpi">
+          <span>Rejected</span>
+          <strong>{{ rejected_assignments|length }}</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+  </div>
+
+  <section class="assignment-section mb-5" data-group="pending">
+    <div class="assignment-section-head">
+      <h4>Pending Assignments</h4>
+      <span class="section-count">{{ pending_assignments|length }}</span>
+    </div>
 
     {% if pending_assignments %}
-    <div class="row g-4">
+      <div class="row g-4 assignment-grid">
+        {% for item in pending_assignments %}
+          <div class="col-md-6 col-xl-4 assignment-item" data-group="pending" data-name="{{ item.assignment.title|lower }} {{ item.assignment.course.title|lower }}">
+            <article class="assignment-card h-100">
+              <div class="assignment-card-top">
+                <div>
+                  <h5 class="mb-1">{{ item.assignment.title }}</h5>
+                  <p class="small text-muted mb-0">{{ item.assignment.course.title }}</p>
+                </div>
+                <span class="assignment-chip pending">Pending</span>
+              </div>
 
-      {% for item in pending_assignments %}
-      <div class="col-md-6 col-lg-4">
+              <p class="assignment-description">{{ item.assignment.description|truncatewords:20 }}</p>
 
-        <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
+              <div class="assignment-meta">
+                {% if item.due_date %}
+                  <span>Due {{ item.due_date|date:"M d, Y H:i" }}</span>
+                {% else %}
+                  <span>Due date not available</span>
+                {% endif %}
+                <span>Attempt {{ item.attempt_count }}/5</span>
+              </div>
 
-          <h5 class="fw-bold mb-2 section-heading">
-            {{ item.assignment.title }}
-          </h5>
-
-          <p class="small mb-1">
-            <strong>Course:</strong> {{ item.assignment.course.title }}
-          </p>
-
-          <p class="small mb-2">
-            {{ item.assignment.description|truncatewords:20 }}
-          </p>
-
-          {% if item.due_date %}
-          <p class="mb-2">
-            <strong>Due:</strong> {{ item.due_date|date:"M d, Y H:i" }}
-          </p>
-          {% endif %}
-
-          {% if item.attempt_count %}
-          <p class="small mb-2">
-            <span class="badge bg-secondary">
-              Attempt {{ item.attempt_count }}/5
-            </span>
-          </p>
-          {% endif %}
-
-          {% with days_left=item.due_date|days_until %}
-          {% if days_left != None %}
-          {% if days_left >= 0 %}
-
-          <p class="small mb-3">
-            <strong>Time left:</strong>
-
-            <span class="badge
-              {% if days_left == 0 %}
-                bg-danger
-              {% elif days_left <= 2 %}
-                bg-warning text-dark
-              {% elif days_left <= 7 %}
-                bg-info
-              {% else %}
-                bg-success
-              {% endif %}">
-
-              {% if days_left == 0 %}
-                Due today
-              {% else %}
-                {{ days_left }} day{{ days_left|pluralize }} left
+              {% if item.due_date %}
+                {% with days_left=item.due_date|days_until %}
+                  {% if days_left != None %}
+                    {% if days_left >= 0 %}
+                      <div class="assignment-time good">
+                        {% if days_left == 0 %}
+                          Due today
+                        {% else %}
+                          {{ days_left }} day{{ days_left|pluralize }} left
+                        {% endif %}
+                      </div>
+                    {% else %}
+                      <div class="assignment-time overdue">Overdue by {{ days_left|abs_value }} day{{ days_left|abs_value|pluralize }}</div>
+                    {% endif %}
+                  {% endif %}
+                {% endwith %}
               {% endif %}
 
-            </span>
-          </p>
-
-          {% else %}
-
-          <p class="small mb-3">
-            <span class="badge bg-danger">
-              Overdue by {{ days_left|abs_value }} day{{ days_left|abs_value|pluralize }}
-            </span>
-          </p>
-
-          {% endif %}
-          {% endif %}
-          {% endwith %}
-
-          <div class="mt-auto">
-            <a href="{% url 'submit_assignment' item.assignment.id %}"
-               class="btn btn-primary w-100 fw-semibold">
-              Submit Assignment
-            </a>
+              <div class="mt-auto">
+                <a href="{% url 'submit_assignment' item.assignment.id %}" class="btn btn-sm w-100">Submit Assignment</a>
+              </div>
+            </article>
           </div>
-
-        </div>
-
+        {% endfor %}
       </div>
-      {% endfor %}
-
-    </div>
-
     {% else %}
-
-    <div class="empty-state text-center py-5">
-      <p class="mb-3">✅ No pending assignments!</p>
-      <a href="{% url 'course_list' %}" class="btn btn-outline-info px-4 py-2">
-        Browse Courses
-      </a>
-    </div>
-
+      <div class="inline-empty">No pending assignments.</div>
     {% endif %}
-  </div>
+  </section>
 
-  <!-- ================= Submitted ================= -->
-  <div class="mb-5">
-    <h4 class="text-success mb-3">📘 Submitted Assignments</h4>
+  <section class="assignment-section mb-5" data-group="submitted">
+    <div class="assignment-section-head">
+      <h4>Submitted Assignments</h4>
+      <span class="section-count">{{ submitted_assignments|length }}</span>
+    </div>
 
     {% if submitted_assignments %}
-    <div class="row g-4">
+      <div class="row g-4 assignment-grid">
+        {% for item in submitted_assignments %}
+          <div class="col-md-6 col-xl-4 assignment-item" data-group="submitted" data-name="{{ item.assignment.title|lower }} {{ item.assignment.course.title|lower }}">
+            <article class="assignment-card h-100">
+              <div class="assignment-card-top">
+                <div>
+                  <h5 class="mb-1">{{ item.assignment.title }}</h5>
+                  <p class="small text-muted mb-0">{{ item.assignment.course.title }}</p>
+                </div>
+                {% if item.submission.status == 'approved' %}
+                  <span class="assignment-chip approved">Approved</span>
+                {% else %}
+                  <span class="assignment-chip review">Under Review</span>
+                {% endif %}
+              </div>
 
-      {% for item in submitted_assignments %}
-      <div class="col-md-6 col-lg-4">
+              <div class="assignment-meta">
+                <span>Submitted {{ item.submission.submitted_at|date:"M d, Y H:i" }}</span>
+                <span>Attempt {{ item.attempt_count }}/5</span>
+              </div>
 
-        <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
+              {% if item.due_date and item.submission.submitted_at > item.due_date %}
+                <div class="assignment-time overdue">Late submission</div>
+              {% endif %}
 
-          <h5 class="fw-bold mb-2">
-            {{ item.assignment.title }}
-          </h5>
-
-          <p class="small mb-1">
-            <strong>Course:</strong> {{ item.assignment.course.title }}
-          </p>
-
-          <p class="small mb-1">
-            <strong>Submitted:</strong>
-            {{ item.submission.submitted_at|date:"M d, Y H:i" }}
-          </p>
-
-          <span class="badge bg-secondary mb-2">
-            Attempt {{ item.attempt_count }}/5
-          </span>
-
-          {% if item.due_date and item.submission.submitted_at > item.due_date %}
-          <span class="badge bg-danger mb-3">
-            ⚠ Late Submission
-          </span>
-          {% endif %}
-
-          <div class="mt-auto">
-
-            {% if item.submission.status == "approved" %}
-            <div class="badge bg-success w-100 py-2 mb-2">
-              ✔ Approved — {{ item.submission.marks }}/10
-            </div>
-
-            {% else %}
-            <span class="badge bg-warning text-dark w-100 py-2">
-              ⏳ Awaiting Review
-            </span>
-
-            {% endif %}
-
+              <div class="assignment-eval">
+                {% if item.submission.status == "approved" %}
+                  <strong>Marks: {{ item.submission.marks }}/10</strong>
+                {% else %}
+                  <strong>Waiting for instructor review</strong>
+                {% endif %}
+              </div>
+            </article>
           </div>
-
-        </div>
-
+        {% endfor %}
       </div>
-      {% endfor %}
-
-    </div>
-
     {% else %}
-    <p class="text-muted">No submitted assignments yet.</p>
+      <div class="inline-empty">No submitted assignments yet.</div>
     {% endif %}
-  </div>
+  </section>
 
-  <!-- ================= Rejected ================= -->
-  <div>
-
-    <h4 class="text-danger mb-3">❌ Rejected Assignments</h4>
+  <section class="assignment-section" data-group="rejected">
+    <div class="assignment-section-head">
+      <h4>Rejected Assignments</h4>
+      <span class="section-count">{{ rejected_assignments|length }}</span>
+    </div>
 
     {% if rejected_assignments %}
-    <div class="row g-4">
+      <div class="row g-4 assignment-grid">
+        {% for item in rejected_assignments %}
+          <div class="col-md-6 col-xl-4 assignment-item" data-group="rejected" data-name="{{ item.assignment.title|lower }} {{ item.assignment.course.title|lower }}">
+            <article class="assignment-card rejected h-100">
+              <div class="assignment-card-top">
+                <div>
+                  <h5 class="mb-1">{{ item.assignment.title }}</h5>
+                  <p class="small text-muted mb-0">{{ item.assignment.course.title }}</p>
+                </div>
+                <span class="assignment-chip rejected">Rejected</span>
+              </div>
 
-      {% for item in rejected_assignments %}
-      <div class="col-md-6 col-lg-4">
+              <div class="assignment-meta">
+                <span>Attempt {{ item.attempt_count }}/5</span>
+                <span>{{ item.attempts_left }} left</span>
+              </div>
 
-        <div class="course-card h-100 p-4 d-flex flex-column border border-danger border-opacity-50">
+              <div class="assignment-feedback">{{ item.submission.feedback|default:"No feedback provided." }}</div>
 
-          <h5 class="fw-bold mb-2">
-            {{ item.assignment.title }}
-          </h5>
-
-          <p class="small mb-1">
-            <strong>Course:</strong> {{ item.assignment.course.title }}
-          </p>
-
-          <span class="badge bg-warning text-dark mb-2">
-            Attempt {{ item.attempt_count }}/5
-          </span>
-
-          <p class="small text-danger mb-3">
-            <strong>Reason:</strong>
-            {{ item.submission.feedback|default:"No feedback provided." }}
-          </p>
-
-          <div class="mt-auto">
-
-            {% if item.attempt_count >= 5 %}
-
-            <span class="badge bg-danger w-100 py-2">
-              Failed — Max Attempts Reached
-            </span>
-
-            {% else %}
-
-            <a href="{% url 'submit_assignment' item.assignment.id %}"
-               class="btn btn-outline-danger w-100">
-              Resubmit Assignment
-            </a>
-
-            <p class="small text-muted text-center mt-2">
-              {{ item.attempts_left }} attempt{{ item.attempts_left|pluralize }} left
-            </p>
-
-            {% endif %}
-
+              <div class="mt-auto">
+                {% if item.attempt_count >= 5 %}
+                  <span class="assignment-final">Max attempts reached</span>
+                {% else %}
+                  <a href="{% url 'submit_assignment' item.assignment.id %}" class="btn btn-sm btn-outline-danger w-100">Resubmit Assignment</a>
+                {% endif %}
+              </div>
+            </article>
           </div>
-
-        </div>
-
+        {% endfor %}
       </div>
-      {% endfor %}
-
-    </div>
-
     {% else %}
-    <p class="text-muted">No rejected assignments 🎉</p>
+      <div class="inline-empty">No rejected assignments.</div>
     {% endif %}
+  </section>
 
+  <div id="assignmentNoResults" class="overlay-box text-center py-5 mt-3 d-none">
+    <h5 class="mb-2">No matching assignments</h5>
+    <p class="text-muted mb-0">Try another keyword or switch the selected section.</p>
   </div>
-
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const assignmentSearch = document.getElementById('assignmentSearch');
+  const assignmentStatus = document.getElementById('assignmentStatus');
+  const assignmentItems = document.querySelectorAll('.assignment-item');
+  const assignmentSections = document.querySelectorAll('.assignment-section');
+  const assignmentNoResults = document.getElementById('assignmentNoResults');
+
+  function filterAssignments() {
+    const query = (assignmentSearch.value || '').toLowerCase().trim();
+    const selected = assignmentStatus.value;
+
+    assignmentItems.forEach((item) => {
+      const name = item.dataset.name || '';
+      const group = item.dataset.group || '';
+      const matchesSearch = name.includes(query);
+      const matchesGroup = selected === 'all' || selected === group;
+      item.classList.toggle('d-none', !(matchesSearch && matchesGroup));
+    });
+
+    let anyVisible = 0;
+    assignmentSections.forEach((section) => {
+      const cards = section.querySelectorAll('.assignment-item');
+      if (cards.length === 0) {
+        section.classList.toggle('d-none', selected !== 'all' && selected !== section.dataset.group);
+        return;
+      }
+
+      const visibleCards = section.querySelectorAll('.assignment-item:not(.d-none)').length;
+      section.classList.toggle('d-none', visibleCards === 0);
+      anyVisible += visibleCards;
+    });
+
+    if (assignmentNoResults) {
+      assignmentNoResults.classList.toggle('d-none', anyVisible > 0 || assignmentItems.length === 0);
+    }
+  }
+
+  if (assignmentSearch && assignmentStatus) {
+    assignmentSearch.addEventListener('input', filterAssignments);
+    assignmentStatus.addEventListener('change', filterAssignments);
+  }
+</script>
 {% endblock %}

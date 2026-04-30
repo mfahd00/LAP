@@ -1,21 +1,34 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+{% block title %}Assignments | LAP{% endblock %}
+
 {% block content %}
-<h2>Assignments for {{ course.title }}</h2>
-<p class="mb-3">
-  <strong>Course Duration:</strong> 
-  <span class="badge bg-info text-dark">{{ course.duration_days }} days</span>
-</p>
-<ul>
-  {% for a in assignments %}
-    <li>
-      <a href="{% url 'submit_assignment' a.id %}">{{ a.title }}</a>
-      (Due: {{ a.due_date|date:"Y-m-d H:i" }})
-    </li>
-  {% empty %}
-    <p>No assignments yet.</p>
-  {% endfor %}
-</ul>
-{% if user.profile.is_instructor and course.created_by == user %}
-  <a href="{% url 'create_assignment' course.id %}" class="btn btn-success">+ Add Assignment</a>
-{% endif %}
+<div class="container py-4">
+  <div class="page-title-row">
+    <div>
+      <h2 class="section-heading">Assignments</h2>
+      <p class="section-subheading mb-0">{{ course.title }} ({{ course.duration_days }} days)</p>
+    </div>
+    {% if user.profile.is_instructor and course.created_by == user %}
+      <a href="{% url 'create_assignment' course.id %}" class="btn">Create Assignment</a>
+    {% endif %}
+  </div>
+
+  <div class="content-panel">
+    {% if assignments %}
+      <div class="list-group list-group-flush">
+        {% for a in assignments %}
+          <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <strong>{{ a.title }}</strong>
+              <div class="small text-muted">Due {{ a.due_date|date:"M d, Y H:i" }}</div>
+            </div>
+            <a href="{% url 'submit_assignment' a.id %}" class="btn btn-sm">Open</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="inline-empty">No assignments available for this course yet.</div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

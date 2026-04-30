@@ -1,54 +1,130 @@
-{% extends 'base.html' %}
-{% load widget_tweaks %}
-{% block title %}Create Course | LAP{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}{{ page_title }} | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-5 d-flex justify-content-center">
-  <div class="form-container shadow p-4 rounded-4" style="max-width: 700px; width: 100%;">
-    <h2 class="fw-bold text-center mb-4 text-primary">Create Course</h2>
+<div class="container py-4">
+  <div class="auth-shell" style="min-height:auto;">
+    <div class="auth-card">
 
-    <form method="post">
-      {% csrf_token %}
-
-      <div class="mb-3">
-        <label for="id_title" class="form-label fw-semibold">Title</label>
-        <input type="text" id="id_title" name="title" class="form-control" required>
+      <div class="text-center mb-4">
+        <h2 class="section-heading">{{ page_title }}</h2>
+        <p class="auth-subtitle mb-0">
+          {% if page_title == "Edit Course" %}
+            Update your course details and improve your content.
+          {% else %}
+            Set up course details and publish learning content.
+          {% endif %}
+        </p>
       </div>
 
-      <div class="mb-3">
-        <label for="id_category" class="form-label fw-semibold">Category</label>
-        <select id="id_category" name="category" class="form-select" required>
-          <option value="">Select category</option>
-          {% for cat in categories %}
-            <option value="{{ cat.id }}">{{ cat.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
+      <!-- 🔴 GLOBAL FORM ERRORS -->
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
 
-      <div class="mb-3">
-        <label class="form-label fw-medium">Difficulty</label>
-        <select name="difficulty" class="form-select">
-          <option value="" selected disabled>Select Difficulty</option>
-          {% for value, label in form.fields.difficulty.choices %}
-            <option value="{{ value }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
+      <form method="post">
+        {% csrf_token %}
 
-      <!-- 🕓 New Duration Field -->
-      <div class="mb-3">
-        <label for="id_duration_days" class="form-label fw-semibold">Course Duration (Days)</label>
-        <input type="number" id="id_duration_days" name="duration_days" class="form-control" min="1" placeholder="e.g. 30" required>
-        <div class="form-text text-muted">Number of days students have access after enrollment.</div>
-      </div>
+        <!-- Title -->
+        <div class="mb-3">
+          <label class="form-label">Title</label>
+          <input 
+            type="text" 
+            name="title" 
+            class="form-control"
+            value="{{ form.title.value|default:'' }}"
+            required
+          >
+          {% if form.title.errors %}
+            <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+          {% endif %}
+        </div>
 
-      <div class="mb-3">
-        <label for="id_description" class="form-label fw-semibold">Description</label>
-        <textarea id="id_description" name="description" rows="4" class="form-control" required></textarea>
-      </div>
+        <!-- Category -->
+        <div class="mb-3">
+          <label class="form-label">Category</label>
+          <select name="category" class="form-select" required>
+            <option value="">Select category</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}"
+                {% if form.category.value == cat.id %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if form.category.errors %}
+            <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+          {% endif %}
+        </div>
 
-      <button type="submit" class="btn w-100 mt-3 fw-semibold py-2">Submit</button>
-    </form>
+        <!-- Difficulty -->
+        <div class="mb-3">
+          <label class="form-label">Difficulty</label>
+          <select name="difficulty" class="form-select">
+            <option value="" disabled>Select Difficulty</option>
+            {% for value, label in form.fields.difficulty.choices %}
+              <option value="{{ value }}"
+                {% if form.difficulty.value == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- ✅ Duration (FIXED) -->
+        <div class="mb-3">
+          <label class="form-label">Course Duration (Days)</label>
+          <input 
+            type="number" 
+            name="duration_days" 
+            class="form-control"
+            min="1"
+            max="180"
+            value="{{ form.duration_days.value|default:30 }}"
+            required
+          >
+
+          <!-- 🔴 ERROR MESSAGE -->
+          {% if form.duration_days.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.duration_days.errors.0 }}
+            </div>
+          {% endif %}
+
+          <div class="form-text text-muted">
+            Must be between 1 and 180 days.
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea 
+            name="description" 
+            rows="4" 
+            class="form-control"
+            required
+          >{{ form.description.value|default:'' }}</textarea>
+
+          {% if form.description.errors %}
+            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn w-100">
+          {% if page_title == "Edit Course" %}
+            Update Course
+          {% else %}
+            Create Course
+          {% endif %}
+        </button>
+
+      </form>
+
+    </div>
   </div>
 </div>
 {% endblock %}

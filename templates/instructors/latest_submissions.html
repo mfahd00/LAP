@@ -1,63 +1,201 @@
-{% extends 'base.html' %}
-{% block title %}
-  Latest Submissions | LAP
-{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Latest Submissions | LAP{% endblock %}
 
 {% block content %}
-  <div class="container py-4">
-    <h3 class="fw-bold text-center mb-4 section-heading">Latest Assignment Submissions</h3>
+<div class="container py-3">
 
-    {% if submissions %}
-      <div class="table-responsive">
-        <table class="table align-middle text-center shadow-sm rounded-4">
-          <thead class="table-gradient text-white">
-            <tr>
-              <th>#</th>
-              <th>Student</th>
-              <th>Course</th>
-              <th>Assignment</th>
-              <th>Attempt</th>
-              <th>Status</th>
-              <th>Submitted On</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for submission in submissions %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ submission.enrollment.student.username }}</td>
-                <td>{{ submission.assignment.course.title }}</td>
-                <td>{{ submission.assignment.title }}</td>
-                <td>
-                  <span class="badge bg-secondary">Attempt {{ submission.attempt_count }}/5</span>
-                </td>
-                <td>
-                  {% if submission.status == 'approved' %}
-                    <span class="badge bg-success">Approved</span>
-                  {% elif submission.status == 'rejected' %}
-                    <span class="badge bg-danger">Rejected</span>
-                  {% else %}
-                    <span class="badge bg-warning text-dark">Submitted</span>
-                  {% endif %}
-                </td>
-                <td>{{ submission.submitted_at|date:'F d, Y H:i' }}</td>
-                <td>
-                  <a href="{% url 'view_submissions' submission.assignment.id %}" class="btn btn-outline-primary btn-sm">View</a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <p class="text-center">No submissions yet.</p>
-    {% endif %}
+  <!-- HEADER + ACTIONS -->
+<div class="page-title-row d-flex justify-content-between align-items-center mb-2">
+
+  <div>
+    <h3 class="section-heading mb-1">Latest Assignment Submissions</h3>
+    <p class="section-subheading mb-0">
+      Recent submission activity across your courses.
+    </p>
   </div>
 
-  <style>
-    .table-gradient {
-      background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
-    }
-  </style>
+  <div class="d-flex gap-2">
+    <button form="submission-filter-form" class="btn btn-primary px-4">
+      Apply
+    </button>
+
+    <a href="{% url 'instructor_latest_submissions' %}" class="btn btn-secondary px-4">
+      Reset
+    </a>
+  </div>
+
+</div>
+
+
+<!-- COMPACT FILTER BAR -->
+<div class="content-panel mb-3 py-3 px-3">
+  <form id="submission-filter-form" method="get" class="row g-2">
+
+    <!-- SEARCH -->
+    <div class="col-md-3">
+      <input 
+        type="text" 
+        name="search" 
+        value="{{ request.GET.search }}" 
+        class="form-control"
+        placeholder="Search student"
+      >
+    </div>
+
+    <!-- COURSE -->
+    <div class="col-md-3">
+      <select name="course" class="form-select">
+        <option value="">All Courses</option>
+        {% for course in instructor_courses %}
+          <option value="{{ course.id }}"
+            {% if request.GET.course == course.id|stringformat:'s' %}selected{% endif %}>
+            {{ course.title }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- STATUS -->
+    <div class="col-md-2">
+      <select name="status" class="form-select">
+        <option value="">All Status</option>
+        <option value="submitted" {% if request.GET.status == "submitted" %}selected{% endif %}>Submitted</option>
+        <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Approved</option>
+        <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>Rejected</option>
+      </select>
+    </div>
+
+    <!-- SORT (DATE DEFAULT) -->
+    <div class="col-md-2">
+      <select name="sort" class="form-select">
+        <option value="newest" {% if request.GET.sort == "newest" or not request.GET.sort %}selected{% endif %}>Newest</option>
+        <option value="oldest" {% if request.GET.sort == "oldest" %}selected{% endif %}>Oldest</option>
+      </select>
+    </div>
+
+    <!-- ATTEMPT (OPTIONAL BUT NICE) -->
+    <div class="col-md-2">
+      <select name="attempt" class="form-select">
+        <option value="">Attempts</option>
+        <option value="1">1</option>
+        <option value="2">2+</option>
+        <option value="3">3+</option>
+      </select>
+    </div>
+
+  </form>
+</div>
+
+  {% if submissions %}
+  <div class="content-panel">
+
+    <div class="table-shell">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+
+          <!-- HEADER -->
+          <thead>
+            <tr>
+              <th style="width:60px;">#</th>
+              <th>Student</th>
+              <th>Course & Assignment</th>
+              <th style="width:140px;">Attempt</th>
+              <th style="width:140px;">Status</th>
+              <th style="width:180px;">Submitted</th>
+              <th style="width:120px;" class="text-end">Action</th>
+            </tr>
+          </thead>
+
+          <!-- BODY -->
+          <tbody>
+            {% for submission in submissions %}
+            <tr>
+
+              <!-- INDEX -->
+              <td class="text-muted small">{{ forloop.counter }}</td>
+
+              <!-- STUDENT -->
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <img 
+                    src="{{ submission.enrollment.student.profile.profile_image_url }}" 
+                    class="mini-avatar"
+                  >
+                  <div>
+                    <div class="fw-semibold">
+                      {{ submission.enrollment.student.username }}
+                    </div>
+                    <div class="text-muted small">
+                      {{ submission.enrollment.student.email }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- COURSE + ASSIGNMENT -->
+              <td>
+                <div class="fw-semibold">
+                  {{ submission.assignment.course.title }}
+                </div>
+                <div class="text-muted small">
+                  {{ submission.assignment.title }}
+                </div>
+              </td>
+
+              <!-- ATTEMPT -->
+              <td>
+                <span class="badge bg-secondary">
+                  {{ submission.attempt_count }}/5
+                </span>
+              </td>
+
+              <!-- STATUS -->
+              <td>
+                {% if submission.status == 'approved' %}
+                  <span class="status-pill approved">Approved</span>
+                {% elif submission.status == 'rejected' %}
+                  <span class="badge badge-hard">
+                    Rejected
+                  </span>
+                {% else %}
+                  <span class="badge badge-int">Submitted</span>
+                {% endif %}
+              </td>
+
+              <!-- DATE -->
+              <td>
+                <div class="small">
+                  {{ submission.submitted_at|date:'M d, Y' }}
+                </div>
+                <div class="text-muted small">
+                  {{ submission.submitted_at|date:'H:i' }}
+                </div>
+              </td>
+
+              <!-- ACTION -->
+              <td class="text-end">
+                <a 
+                  href="{% url 'view_submissions' submission.assignment.id %}" 
+                  class="btn btn-outline-primary "
+                >
+                  View
+                </a>
+              </td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
+  </div>
+  {% else %}
+    <div class="inline-empty text-center py-4">
+      No submissions yet.
+    </div>
+  {% endif %}
+
+</div>
 {% endblock %}

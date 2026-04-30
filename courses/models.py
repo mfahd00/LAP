@@ -4,6 +4,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from datetime import timedelta
+from django.templatetags.static import static
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Profile(models.Model):
@@ -15,6 +17,8 @@ class Profile(models.Model):
     profile_pic = models.ImageField(upload_to='profiles/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
+    warnings_count = models.IntegerField(default=0)
+    is_suspended = models.BooleanField(default=False)
     verification_document = models.FileField(
     upload_to='instructor_docs/',
     blank=True,
@@ -37,6 +41,11 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
+    @property
+    def profile_image_url(self):
+        if self.profile_pic and hasattr(self.profile_pic, 'url'):
+            return self.profile_pic.url
+        return static('images/default_profile.jpg')
 
 
 @receiver(post_save, sender=User)
@@ -63,7 +72,14 @@ class Course(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    duration_days = models.PositiveIntegerField(default=30, help_text="Course access duration (in days) after enrollment")
+    duration_days = models.PositiveIntegerField(
+        default=30,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(180)
+        ],
+        help_text="Course duration (1–180 days)"
+    )
 
     def __str__(self):
         return self.title
@@ -307,6 +323,74 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
-
+    type = models.CharField(max_length=50, blank=True, null=True)
     def __str__(self):
         return f"{self.user.username} - {self.message}"
+
+class CourseFeedback(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="feedbacks")
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(
+        choices=[(i, f"{i} ⭐") for i in range(1, 6)]
+    )
+    comment = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('course', 'student')
+
+    def __str__(self):
+        return f"{self.student.username} - {self.course.title} ({self.rating})"
+
+class Report(models.Model):
+
+    REPORT_TYPE_CHOICES = [
+        ('course', 'Course'),
+        ('user', 'User'),
+        ('other', 'Other'),
+    ]
+
+    REASON_CHOICES = [
+        ('spam', 'Spam'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('abuse', 'Abusive Behavior'),
+        ('other', 'Other'),
+    ]
+
+    reported_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    reported_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="reports_against"
+    )
+
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES)
+    description = models.TextField(blank=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('resolved', 'Resolved')],
+        default='pending'
+    )
+    attachment = models.FileField(
+        upload_to='report_attachments/',
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.report_type} - {self.reason}"

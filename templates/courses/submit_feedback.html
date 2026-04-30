@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="form-container">
+  <h3 class="section-heading mb-3">Give Feedback</h3>
+
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary w-100 mt-2">
+      Submit Feedback
+    </button>
+  </form>
+</div>
+{% endblock %}

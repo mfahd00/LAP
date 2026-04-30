@@ -3,13 +3,33 @@
   <div class="col-md-6 col-lg-4">
     <div class="course-card h-100 p-4 d-flex flex-column hover-glow">
 
+      <!-- TITLE -->
       <h5 class="fw-bold mb-2">
-        <a href="{% url 'course_detail' course.id %}"
-           class="text-decoration-none section-subheading">
-          {{ course.title }}
-        </a>
+        {% if user.is_authenticated and user.profile.is_moderator %}
+          <a href="{% url 'moderator_course_detail' course.id %}"
+             class="text-decoration-none section-subheading">
+        {% else %}
+          <a href="{% url 'course_detail' course.id %}"
+             class="text-decoration-none section-subheading">
+        {% endif %}
+            {{ course.title }}
+          </a>
       </h5>
 
+      <!-- ⭐ RATING -->
+      {% if course.avg_rating %}
+        <div class="mb-2">
+          <span class="status-pill pending">
+            ⭐ {{ course.avg_rating|floatformat:1 }}
+          </span>
+        </div>
+      {% else %}
+        <div class="mb-2">
+          <small class="text-muted">No ratings yet</small>
+        </div>
+      {% endif %}
+
+      <!-- CATEGORY + DIFFICULTY -->
       <div class="mb-2 d-flex flex-wrap gap-2">
         {% if course.category %}
           <span class="badge badge-cat">{{ course.category.name }}</span>
@@ -24,6 +44,7 @@
         {% endif %}
       </div>
 
+      <!-- INFO -->
       <p class="small mb-1">
         <strong>Instructor:</strong> {{ course.created_by.username }}
       </p>
@@ -36,11 +57,19 @@
         <strong>Duration:</strong> {{ course.duration_days }} days
       </p>
 
+      <!-- BUTTON -->
       <div class="mt-auto">
-        <a href="{% url 'course_detail' course.id %}"
-           class="btn btn-outline-info w-100 fw-semibold">
-          View Course
-        </a>
+        {% if user.is_authenticated and user.profile.is_moderator %}
+          <a href="{% url 'moderator_course_detail' course.id %}"
+             class="btn btn-outline-primary w-100 fw-semibold">
+            Review Course
+          </a>
+        {% else %}
+          <a href="{% url 'course_detail' course.id %}"
+             class="btn btn-outline-info w-100 fw-semibold">
+            View Course
+          </a>
+        {% endif %}
       </div>
 
     </div>

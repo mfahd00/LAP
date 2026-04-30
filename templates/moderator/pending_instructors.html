@@ -1,31 +1,28 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Pending Instructor Approvals | LAP{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-  <div class="text-center mb-5">
-    <h2 class="fw-bold section-heading mb-2">Pending Instructor Approvals</h2>
-    <p class="section-subheading mb-0">Review pending instructor accounts</p>
+  <div class="page-title-row">
+    <div>
+      <h2 class="section-heading">Pending Instructor Approvals</h2>
+      <p class="section-subheading mb-0">Review and approve instructor registration requests.</p>
+    </div>
   </div>
 
   {% if pending_instructors %}
-    <div class="row g-4 justify-content-center">
+    <div class="row g-4">
       {% for profile in pending_instructors %}
         <div class="col-md-4 col-sm-6">
-          <div class="course-card text-center p-4 h-100 shadow-sm rounded-4 d-flex flex-column justify-content-center">
-            <p class="mb-3">
-              <strong>Username:</strong> '{{ profile.user.username }}' <br>
-              <strong>Email:</strong> '{{ profile.user.email }}'
-            </p>
-            <a href="{% url 'approve_instructor' profile.user.id %}" class="btn btn-gradient btn-sm px-4 ">
-              Approve
-            </a>
+          <div class="course-card text-center p-4 h-100">
+            <p class="mb-3"><strong>Username:</strong> {{ profile.user.username }}<br><strong>Email:</strong> {{ profile.user.email }}</p>
+            <a href="{% url 'approve_instructor' profile.user.id %}" class="btn btn-sm">Approve</a>
           </div>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <p class="text-center text-muted mb-0">No pending instructor requests.</p>
+    <div class="inline-empty">No pending instructor requests.</div>
   {% endif %}
 </div>
 {% endblock %}

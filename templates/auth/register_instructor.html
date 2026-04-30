@@ -1,135 +1,70 @@
-{% extends 'base.html' %}
-{% load static widget_tweaks %}
+﻿{% extends 'base.html' %}
+{% load widget_tweaks %}
 {% block title %}Instructor Registration | LAP{% endblock %}
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh;">
-  <div class="form-container shadow-lg p-4" style="max-width: 460px; width: 100%; border-radius: 15px;">
-
-    <h2 class="fw-bold text-center mb-4">Instructor Registration</h2>
-
-    {% if form.errors %}
-    <div class="alert alert-danger" role="alert">
-      {{ form.errors }}
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <h2 class="section-heading">Instructor Registration</h2>
+      <p class="auth-subtitle">Submit your details for moderator approval.</p>
     </div>
-    {% endif %}
+
+    {% if form.errors %}<div class="alert alert-danger">{{ form.errors }}</div>{% endif %}
 
     <form method="post" enctype="multipart/form-data" id="instructorRegistrationForm" novalidate>
       {% csrf_token %}
-      
-      <div class="mb-3">
-        <label class="form-label fw-medium">Username</label>
-        {{ form.username|add_class:"form-control" }}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Username</label>
+          {{ form.username|add_class:"form-control" }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          {{ form.email|add_class:"form-control" }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Department</label>
+          {{ form.department|add_class:"form-select" }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Verification Document</label>
+          {{ form.verification_document|add_class:"form-control" }}
+          <small class="text-muted">Upload ID card or appointment document (PDF/image).</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Password</label>
+          {{ form.password1|add_class:"form-control" }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Confirm Password</label>
+          {{ form.password2|add_class:"form-control" }}
+        </div>
       </div>
-      
-      <div class="mb-3">
-        <label class="form-label fw-medium">Department</label>
-        {{ form.department|add_class:"form-select" }}
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-medium">Email</label>
-        {{ form.email|add_class:"form-control" }}
-      </div>
-      
-      <div class="mb-3">
-        <label class="form-label fw-medium">Verification Document</label>
-        {{ form.verification_document|add_class:"form-control" }}
-        <small class="text-muted">
-          Upload ID card / appointment letter (PDF or Image).
-        </small>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-medium">Password</label>
-        {{ form.password1|add_class:"form-control" }}
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-medium">Confirm Password</label>
-        {{ form.password2|add_class:"form-control" }}
-      </div>
-
-
-      <button type="submit" class="btn w-100 py-2">Register as Instructor</button>
+      <button type="submit" class="btn w-100 mt-4">Register as Instructor</button>
     </form>
 
-    <p class="text-center mt-3">
-      Already have an account? <a href="{% url 'login' %}">Login here</a>.
-    </p>
+    <p class="text-center mt-3 mb-0">Already registered? <a href="{% url 'login' %}">Login</a></p>
   </div>
 </div>
+{% endblock %}
 
-<style>
-  .form-container h2 {
-    font-weight: 700;
-  }
-
-  .form-control, .form-select {
-    border-radius: 8px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    background-color: rgba(255, 255, 255, 0.9);
-    color: #212529;
-    transition: all 0.3s ease;
-  }
-
-  .form-control:focus, .form-select:focus {
-    border-color: #2a7df5;
-    box-shadow: 0 0 8px rgba(42, 125, 245, 0.5);
-  }
-
-  body.light-mode .form-label, 
-  body.light-mode p, 
-  body.light-mode a {
-    color: #212529 !important;
-  }
-
-  body.dark-mode .form-label, 
-  body.dark-mode p, 
-  body.dark-mode a {
-    color: #f8f9fa !important;
-  }
-
-  body.dark-mode .form-control,
-  body.dark-mode .form-select {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #f8f9fa;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .btn {
-    background: linear-gradient(135deg, #0a58ca, #084bb5);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    transition: 0.3s;
-    font-weight: 600;
-  }
-
-  .btn:hover {
-    background: linear-gradient(135deg, #2a7df5, #1a4a8c);
-    box-shadow: 0 3px 12px rgba(42, 125, 245, 0.4);
-  }
-</style>
-
+{% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const form = document.getElementById("instructorRegistrationForm");
-  const pass1 = document.querySelector("#id_password1");
-  const pass2 = document.querySelector("#id_password2");
-
-  form.addEventListener("submit", function(e) {
-    if (pass1 && pass2) {
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('instructorRegistrationForm');
+    const pass1 = document.getElementById('id_password1');
+    const pass2 = document.getElementById('id_password2');
+    if (!form || !pass1 || !pass2) return;
+    form.addEventListener('submit', function (e) {
       if (pass1.value.length < 8) {
-        alert("Password must be at least 8 characters.");
+        alert('Password must be at least 8 characters.');
         e.preventDefault();
       } else if (pass1.value !== pass2.value) {
-        alert("Passwords do not match.");
+        alert('Passwords do not match.');
         e.preventDefault();
       }
-    }
+    });
   });
-});
 </script>
 {% endblock %}

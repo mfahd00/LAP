@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Pending Results | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- HEADER -->
+  <div class="page-title-row mb-3">
+    <div>
+      <h3 class="section-heading">Pending Results</h3>
+      <p class="section-subheading mb-0">
+        Finalize results for students who have completed their courses.
+      </p>
+    </div>
+  </div>
+
+  <!-- SORT -->
+  <div class="d-flex justify-content-center mb-4">
+    <div class="sort-pill">
+
+      <a href="?status=pending"
+         class="sort-btn {% if selected_status == 'pending' %}active{% endif %}">
+        Pending
+      </a>
+
+      <a href="?status=published"
+         class="sort-btn {% if selected_status == 'published' %}active{% endif %}">
+        Published
+      </a>
+
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content-panel">
+
+    {% if results %}
+
+      <div class="pending-list">
+
+        {% for e in results %}
+          <div class="pending-row d-flex align-items-center justify-content-between flex-wrap">
+
+            <!-- LEFT -->
+            <div class="d-flex align-items-center gap-3">
+
+              <img src="{% if e.student.profile.profile_pic %}{{ e.student.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
+                   class="profile-img-sm" alt="Student">
+
+              <div>
+                <div class="fw-semibold">{{ e.student.username }}</div>
+                <div class="small text-muted">{{ e.course.title }}</div>
+                <div class="small text-muted">
+                  Completed • {{ e.course_end_date|date:"M d, Y" }}
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT -->
+            <div class="d-flex align-items-center gap-2">
+
+              <span class="pending-status {% if selected_status == 'published' %}published{% else %}pending{% endif %}">
+                {% if selected_status == 'published' %}
+                  Published
+                {% else %}
+                  Ready for evaluation
+                {% endif %}
+              </span>
+
+              {% if selected_status == 'pending' %}
+                <a href="{% url 'finalize_course_result' e.id %}"
+                   class="btn btn-sm btn-primary">
+                  Publish
+                </a>
+              {% endif %}
+
+            </div>
+
+          </div>
+        {% endfor %}
+
+      </div>
+
+    {% else %}
+
+      <div class="inline-empty text-center py-4">
+        {% if selected_status == "published" %}
+          <h6 class="mb-1">No published results yet</h6>
+          <small>Published results will appear here</small>
+        {% else %}
+          <h6 class="mb-1">All results are published 🎉</h6>
+          <small>No pending evaluations at the moment</small>
+        {% endif %}
+      </div>
+
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

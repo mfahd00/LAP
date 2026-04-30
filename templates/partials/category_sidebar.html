@@ -1,10 +1,8 @@
-<aside class="sidebar">
+﻿<aside class="category-sidebar-panel">
   <h3>Browse by Category</h3>
   <ul>
     {% for category in categories %}
-      <li>
-        <a href="{% url 'courses_by_category' category.id %}">{{ category.name }}</a>
-      </li>
+      <li><a href="{% url 'courses_by_category' category.id %}">{{ category.name }}</a></li>
     {% empty %}
       <li>No categories yet.</li>
     {% endfor %}
@@ -12,25 +10,26 @@
 </aside>
 
 <style>
-.sidebar {
-    min-width: 200px;
-    padding: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f7f7f7;
-    margin-bottom: 1rem;
+.category-sidebar-panel {
+  min-width: 200px;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface) 94%, #fff 6%);
 }
 
-.sidebar h3 {
-    margin-top: 0;
+.category-sidebar-panel h3 {
+  margin-top: 0;
+  font-size: 1rem;
 }
 
-.sidebar ul {
-    list-style: none;
-    padding-left: 0;
+.category-sidebar-panel ul {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
 }
 
-.sidebar ul li {
-    margin-bottom: 0.5rem;
+.category-sidebar-panel ul li {
+  margin-bottom: 0.45rem;
 }
 </style>

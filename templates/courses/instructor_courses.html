@@ -1,63 +1,32 @@
-{% extends "base.html" %}
-{% block title %}Instructor Courses{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Instructor Courses | LAP{% endblock %}
 
 {% block content %}
-
 <div class="container py-4">
+  <div class="page-title-row">
+    <div>
+      <h3 class="section-heading">Courses by {{ instructor.username }}</h3>
+      <p class="section-subheading mb-0">Instructor catalog overview.</p>
+    </div>
+  </div>
 
-<h3 class="fw-bold mb-4 text-center">
-Courses by {{ instructor.username }}
-</h3>
-
-{% if courses %}
-
-<div class="row g-4">
-
-{% for course in courses %}
-
-<div class="col-md-4">
-
-<div class="card shadow-sm h-100">
-
-<div class="card-body">
-
-<h5 class="fw-bold">{{ course.title }}</h5>
-
-<p class="text-muted small">
-{{ course.description|truncatewords:15 }}
-</p>
-
-<div class="d-flex justify-content-between mt-3">
-
-<a href="{% url 'course_detail' course.id %}"
-class="btn btn-sm btn-primary">
-View Course
-</a>
-
-<span class="badge bg-secondary">
-{{ course.student_count }} students
-</span>
-
+  {% if courses %}
+    <div class="row g-4">
+      {% for course in courses %}
+        <div class="col-md-6 col-lg-4">
+          <div class="course-card h-100 p-3">
+            <h5 class="mb-2">{{ course.title }}</h5>
+            <p class="small text-muted mb-3">{{ course.description|truncatewords:15 }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <a href="{% url 'course_detail' course.id %}" class="btn btn-sm">View Course</a>
+              <span class="badge bg-secondary">{{ course.student_count }} students</span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="inline-empty">This instructor has no courses yet.</div>
+  {% endif %}
 </div>
-
-</div>
-
-</div>
-
-</div>
-
-{% endfor %}
-
-</div>
-
-{% else %}
-
-<p class="text-center text-muted">
-This instructor has no courses yet.
-</p>
-
-{% endif %}
-
-</div>
-
 {% endblock %}

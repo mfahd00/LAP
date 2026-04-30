@@ -1,66 +1,79 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Notifications | LAP{% endblock %}
 
 {% block content %}
-
 <div class="container py-4">
 
-  <div class="text-center mb-4">
-    <h3 class="fw-bold section-heading">Notifications</h3>
-    <p class="text-muted small mb-0">
-      Stay updated with recent activity
+  <!-- HEADER -->
+  <div class="mb-4">
+    <h3 class="section-heading mb-1">Notifications</h3>
+    <p class="section-subheading mb-0">
+      Stay updated with activities across your courses and platform.
     </p>
   </div>
 
   {% if notifications %}
-
-  <div class="list-group shadow-sm">
+  <div class="course-card p-0 overflow-hidden">
 
     {% for n in notifications %}
+    <div class="notification-item d-flex align-items-start gap-3 {% if not n.is_read %}unread{% endif %}">
 
-    <a href="{{ n.link|default:'#' }}"
-       class="list-group-item list-group-item-action d-flex justify-content-between align-items-start
-       {% if not n.is_read %}list-group-item-primary{% endif %}">
+      <!-- ICON -->
+      <div class="notification-icon">
 
-      <div class="me-auto">
+        {% if n.type == "warning" %}
+          <i class="bi bi-exclamation-triangle-fill text-warning"></i>
 
-        <div class="fw-semibold">
+        {% elif n.type == "report" %}
+          <i class="bi bi-flag-fill text-danger"></i>
+
+        {% elif n.type == "assignment" %}
+          <i class="bi bi-file-earmark-text-fill text-info"></i>
+
+        {% elif n.type == "announcement" %}
+          <i class="bi bi-megaphone-fill text-success"></i>
+
+        {% else %}
+          <i class="bi bi-bell-fill text-muted"></i>
+        {% endif %}
+
+      </div>
+
+      <!-- CONTENT -->
+      <div class="flex-grow-1">
+
+        <div class="notification-message">
           {{ n.message }}
         </div>
 
-        <div class="small text-muted mt-1">
+        <div class="notification-meta">
           {{ n.created_at|timesince }} ago
         </div>
 
       </div>
 
+      <!-- NEW DOT -->
       {% if not n.is_read %}
-      <span class="badge bg-primary">New</span>
+      <div class="notification-dot"></div>
       {% endif %}
 
-    </a>
-
+    </div>
     {% endfor %}
 
   </div>
 
   {% else %}
 
-  <div class="text-center py-5 overlay-box">
-
-    <i class="bi bi-bell-slash fs-1 mb-3 d-block opacity-75"></i>
-
-    <p class="mb-1">No notifications yet</p>
-
-    <p class="text-muted small">
-      You’ll see updates about courses, assignments and announcements here.
+  <!-- EMPTY STATE -->
+  <div class="overlay-box text-center py-5 empty-state">
+    <i class="bi bi-bell-slash fs-1 d-block mb-3"></i>
+    <p class="mb-1 fw-semibold">No notifications yet</p>
+    <p class="section-subheading mb-0">
+      You're all caught up. New updates will appear here.
     </p>
-
   </div>
 
   {% endif %}
-
 </div>
-
 {% endblock %}

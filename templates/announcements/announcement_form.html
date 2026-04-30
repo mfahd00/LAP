@@ -1,36 +1,35 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Create Announcement | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-5 d-flex justify-content-center">
-  <div class="form-container shadow p-4 rounded-4" style="max-width: 700px; width: 100%;">
-    <h2 class="fw-bold text-center mb-4">Create Announcement</h2>
-
-    <form method="post">
-      {% csrf_token %}
-
-      <div class="mb-3">
-        <label for="id_title" class="form-label fw-semibold">Title</label>
-        <input type="text" id="id_title" name="title" class="form-control" required>
+<div class="container py-4">
+  <div class="auth-shell" style="min-height:auto;">
+    <div class="auth-card">
+      <div class="text-center mb-4">
+        <h2 class="section-heading">Create Announcement</h2>
+        <p class="auth-subtitle mb-0">Publish an update to students in a selected course.</p>
       </div>
 
-      <div class="mb-3">
-        <label for="id_course" class="form-label fw-semibold">Course</label>
-        <select id="id_course" name="course_id" class="form-select" required>
-          <option value="">Select Course</option>
-          {% for course in courses %}
-            <option value="{{ course.id }}">{{ course.title }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <label for="id_content" class="form-label fw-semibold">Message</label>
-        <textarea id="id_content" name="message" rows="4" class="form-control" required></textarea>
-      </div>
-
-      <button type="submit" class="btn w-100 mt-3">Submit</button>
-    </form>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_title" class="form-label">Title</label>
+          <input type="text" id="id_title" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="id_course" class="form-label">Course</label>
+          <select id="id_course" name="course_id" class="form-select" required>
+            <option value="">Select course</option>
+            {% for course in courses %}<option value="{{ course.id }}">{{ course.title }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="id_content" class="form-label">Message</label>
+          <textarea id="id_content" name="message" rows="4" class="form-control" required></textarea>
+        </div>
+        <button type="submit" class="btn w-100">Publish Announcement</button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

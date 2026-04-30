@@ -1,139 +1,153 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Manage Instructors | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-4 d-flex justify-content-center">
-  <div class="overlay-box w-100" style="max-width: 1150px;">
-    <div class="p-4">
+<div class="container py-4">
 
-      <h3 class="fw-bold mb-4 text-center section-heading">
-        Instructor Management
-      </h3>
-
-      <!-- 🔎 FILTERS -->
-      <form id="moderator-filter-form" method="GET" class="mb-4">
-        <div class="row g-3 align-items-end">
-
-          <div class="col-md-3">
-            <input type="text"
-                   name="search"
-                   value="{{ request.GET.search }}"
-                   class="form-control"
-                   placeholder="Search username/email">
-          </div>
-
-          <div class="col-md-2">
-            <select name="status" class="form-select">
-              <option value="">All Status</option>
-              <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Approved</option>
-              <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
-            </select>
-          </div>
-
-          <div class="col-md-3">
-            <select name="department" class="form-select">
-              <option value="">All Departments</option>
-              {% for dept in departments %}
-              <option value="{{ dept.id }}"
-                {% if request.GET.department == dept.id|stringformat:"s" %}selected{% endif %}>
-                {{ dept.name }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select name="sort" class="form-select">
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="name">Name</option>
-              <option value="email">Email</option>
-              <option value="department">Department</option>
-              <option value="status">Status</option>
-            </select>
-          </div>
-
-          <div class="col-md-2 d-grid">
-            <button class="btn btn-info fw-semibold">Apply</button>
-          </div>
-
-        </div>
-      </form>
-
-      <!-- 📦 TABLE -->
-      <div id="moderator-container" class="fade-wrapper">
-        {% include "moderator/instructor_table.html" %}
-      </div>
-
+  <!-- HEADER -->
+  <div class="page-title-row mb-3">
+    <div>
+      <h3 class="section-heading">Instructor Management</h3>
+      <p class="section-subheading mb-0">
+        Review, approve, and manage instructor accounts efficiently.
+      </p>
     </div>
+  </div>
+
+  <!-- KPI STRIP -->
+<div class="kpi-grid mb-3">
+  <div class="kpi-item">
+    <div class="label">Total</div>
+    <div class="value">{{ total_instructors_count }}</div>
+  </div>
+  <div class="kpi-item">
+    <div class="label">Approved</div>
+    <div class="value text-success">{{ approved_count }}</div>
+  </div>
+  <div class="kpi-item">
+    <div class="label">Pending</div>
+    <div class="value text-warning">{{ pending_count }}</div>
   </div>
 </div>
 
-<style>
-.table-gradient {
-  background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
-}
-.overlay-box {
-  background: var(--bs-body-bg);
-  border-radius: 1rem;
-  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
-}
-.table tbody tr:hover {
-  background-color: rgba(0,0,0,0.05);
-}
-.fade-wrapper {
-  transition: opacity 0.25s ease;
-}
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-</style>
+  <!-- FILTER PANEL -->
+  <div class="content-panel mb-4">
+  <form id="moderator-filter-form" method="get" class="row g-3 align-items-center">
 
+    <div class="col-md-3">
+      <input type="text" name="search"
+        value="{{ request.GET.search }}"
+        class="form-control search-bar"
+        placeholder="Search instructors...">
+    </div>
+
+    <div class="col-md-2">
+      <select name="status" class="form-select control-select">
+        <option value="">Status</option>
+        <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Approved</option>
+        <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <select name="department" class="form-select control-select">
+        <option value="">Department</option>
+        {% for dept in departments %}
+          <option value="{{ dept.id }}"
+            {% if request.GET.department == dept.id|stringformat:"s" %}selected{% endif %}>
+            {{ dept.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <select name="sort" class="form-select control-select">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="name">Name</option>
+        <option value="email">Email</option>
+        <option value="department">Department</option>
+        <option value="status">Status</option>
+      </select>
+    </div>
+
+    <!-- APPLY + RESET -->
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn flex-fill">Apply</button>
+      <button type="button" id="reset-filters" class="btn btn-secondary flex-fill">
+        Reset
+      </button>
+    </div>
+
+  </form>
+</div>
+
+  <!-- TABLE -->
+  <div id="moderator-container" class="fade-wrapper">
+    {% include "moderator/instructor_table.html" %}
+  </div>
+{% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-  const form = document.getElementById("moderator-filter-form");
-  const container = document.getElementById("moderator-container");
-
+  const form = document.getElementById('moderator-filter-form');
+  const container = document.getElementById('moderator-container');
+  const resetBtn = document.getElementById('reset-filters');
   let timeout = null;
 
   function fetchData() {
     const params = new URLSearchParams(new FormData(form));
 
-    container.style.opacity = "0.4";
+    container.style.opacity = '0.4';
 
-    fetch("?" + params.toString(), {
-      headers: { "X-Requested-With": "XMLHttpRequest" }
+    fetch('?' + params.toString(), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(res => res.text())
     .then(html => {
       container.innerHTML = html;
-      container.style.opacity = "1";
+      container.style.opacity = '1';
     });
   }
 
-  form.addEventListener("input", function () {
+  /* 🔍 Live filter (typing) */
+  form.addEventListener('input', function () {
     clearTimeout(timeout);
     timeout = setTimeout(fetchData, 300);
   });
 
-  form.addEventListener("submit", function(e){
+  /* ✅ Apply button */
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
     fetchData();
   });
 
-  container.addEventListener("click", function(e) {
-    if (e.target.classList.contains("ajax-action")) {
-      const url = e.target.dataset.url;
-      fetch(url, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      }).then(() => fetchData());
-    }
+  /* 🔄 Reset button */
+  resetBtn.addEventListener('click', function () {
+
+    form.reset();
+
+    const selects = form.querySelectorAll('select');
+    selects.forEach(select => select.selectedIndex = 0);
+
+    history.replaceState(null, '', window.location.pathname);
+
+    fetchData();
+  });
+
+  /* ⚡ Action buttons (approve/remove) */
+  container.addEventListener('click', function (event) {
+    const button = event.target.closest('.ajax-action');
+    if (!button) return;
+
+    fetch(button.dataset.url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    }).then(fetchData);
   });
 
 });
 </script>
-
+{% endblock %}
+</div>
 {% endblock %}

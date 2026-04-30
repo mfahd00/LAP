@@ -1,690 +1,249 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Dashboard | LAP{% endblock %}
 
 {% block content %}
-<div class="bg-animation">
-  <span></span>
-  <span></span>
-  <span></span>
-</div>
-<div class="container py-4">
-
-  <!-- HEADER -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold section-heading">
-        LAP — Learn. Apply. Progress 
-      </h2>
-      <p class="section-subheading mb-0">
-        "Consistency beats talent when talent doesn’t show up."
-      </p>
-    </div>
-
-    <a href="{% url 'notifications' %}" class="position-relative fs-4 text-decoration-none bi-bell">
-      
-      {% if unread_notifications_count > 0 %}
-      <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
-        {{ unread_notifications_count }}
-      </span>
-      {% endif %}
-    </a>
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+  <div>
+    <h2 class="section-heading">Dashboard</h2>
+    <p class="section-subheading mb-0">A focused overview of your activity, priorities, and progress.</p>
   </div>
 
-  {% if not is_instructor and not is_moderator %}
-
-  <div class="row g-4 align-items-stretch">
-
-    <!-- LEFT -->
-    <div class="col-lg-9 d-flex flex-column">
-
-      <!-- USER CARD -->
-      <div class="course-card d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h4 class="fw-bold">Welcome, {{ user.username }} 👋</h4>
-          <p class="text-muted mb-0">
-            {{ pending_count }} assignments · {{ remaining_classes }} classes left
-          </p>
-        </div>
-
-        <img src="{% if user.profile.profile_pic %}{{ user.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
-             class="profile-img">
-      </div>
-
-      <!-- DEADLINES -->
-      <div class="course-card mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-semibold mb-0 bi-file-earmark-check"> Upcoming Deadlines</h5>
-
-  <a href="{% url 'student_assignments' %}" class="btn btn-sm">
-    View All
+  <a href="{% url 'notifications' %}" class="btn btn-outline-primary position-relative">
+    <i class="bi bi-bell me-1"></i> Notifications
+    {% if unread_notifications_count > 0 %}
+      <span class="badge bg-danger ms-2">{{ unread_notifications_count }}</span>
+    {% endif %}
   </a>
 </div>
 
-        
-        {% for item in pending_assignments|slice:":3" %}
-        <div class="deadline-item d-flex justify-content-between align-items-center mb-2">
-
+{% if not is_instructor and not is_moderator %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="course-card mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
           <div>
-            <strong>{{ item.title }}</strong><br>
-            <small class="text-muted">
-              {{ item.course.title }} • 
-              {% if item.days_left <= 0 %}
-                <span class="text-danger">Deadline Over</span>
-              {% else %}
-                Due in {{ item.days_left }} days
-              {% endif %}
-            </small>
+            <h4 class="mb-1">Welcome back, {{ user.username }}</h4>
+            <p class="section-subheading mb-0">{{ pending_count }} pending assignments and {{ remaining_classes }} classes remaining.</p>
           </div>
-
-          <a href="{% url 'assignment_list' item.course.id %}" class="btn btn-sm">
-            View
-          </a>
-
+          <img src="{% if user.profile.profile_pic %}{{ user.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}" class="profile-img" alt="Profile" />
         </div>
+      </div>
+
+      <div class="course-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Upcoming Deadlines</h5>
+          <a href="{% url 'student_assignments' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+
+        {% for item in pending_assignments|slice:":4" %}
+          <div class="deadline-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ item.title }}</strong>
+              <div class="small text-muted">{{ item.course.title }}</div>
+            </div>
+            <div class="text-end">
+              {% if item.days_left <= 0 %}
+                <div class="small text-danger fw-semibold">Deadline passed</div>
+              {% else %}
+                <div class="small text-warning fw-semibold">Due in {{ item.days_left }} days</div>
+              {% endif %}
+              <a href="{% url 'assignment_list' item.course.id %}" class="btn btn-sm mt-1">Open</a>
+            </div>
+          </div>
         {% empty %}
-        <p class="text-muted small">No deadlines </p>
+          <p class="text-muted mb-0">No pending assignment deadlines.</p>
         {% endfor %}
       </div>
 
-      <!-- POPULAR COURSES -->
-      <div class="course-card mb-4">
+      <div class="course-card">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-semibold bi-journals"> Popular Courses</h5>
-          <a href="{% url 'course_list' %}" class="btn btn-sm">Browse</a>
+          <h5 class="mb-0">Popular Courses</h5>
+          <a href="{% url 'course_list' %}" class="btn btn-sm btn-outline-primary">Browse</a>
         </div>
 
-        <div class="carousel-container">
-          <div class="carousel-track" id="courseTrack">
-
-            {% for course in popular_courses %}
-            <div class="mini-course-card">
-
-              <h6 class="mb-2">{{ course.title }}</h6>
-
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <img src="{% if course.created_by.profile.profile_pic %}{{ course.created_by.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
-                     class="profile-img-sm">
-                <small class="text-muted">{{ course.created_by.username }}</small>
-              </div>
-
-
-            </div>
-            {% endfor %}
-
-            {% for course in popular_courses %}
-            <div class="mini-course-card">
-              <h6 class="mb-2">{{ course.title }}</h6>
-
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <img src="{% if course.created_by.profile.profile_pic %}{{ course.created_by.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
-                     class="profile-img-sm">
-                <small class="text-muted">{{ course.created_by.username }}</small>
+        <div class="row g-3">
+          {% for course in popular_courses|slice:":4" %}
+            <div class="col-md-6">
+              <div class="mini-course-card h-100">
+                <h6 class="mb-1">{{ course.title }}</h6>
+                <div class="small text-muted mb-2">Instructor: {{ course.created_by.username }}</div>
+                <a href="{% url 'course_detail' course.id %}" class="btn btn-sm">View Course</a>
               </div>
             </div>
-            {% endfor %}
+          {% empty %}
+            <div class="col-12"><p class="text-muted mb-0">No popular courses available right now.</p></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
 
+    <div class="col-lg-4">
+      <div class="course-card mb-4">
+        <h5 class="mb-3">Quick Stats</h5>
+        <div class="stat-card mb-2"><div class="small text-muted">Pending Assignments</div><strong>{{ pending_count }}</strong></div>
+        <div class="stat-card mb-2"><div class="small text-muted">Enrolled Courses</div><strong>{{ enrollments|length }}</strong></div>
+        <div class="stat-card"><div class="small text-muted">Completed Courses</div><strong>{{ completed_courses_count }}</strong></div>
+      </div>
+
+
+      <div class="course-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Top Instructors</h5>
+          <a href="{% url 'leaderboard' %}" class="btn btn-sm btn-outline-primary">Leaderboard</a>
+        </div>
+        {% for instructor in top_instructors|slice:":5" %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <img src="{% if instructor.profile.profile_pic %}{{ instructor.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}" class="profile-img-sm" alt="Instructor" />
+            <span>{{ instructor.username }}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- STATS CARDS -->
-      <div class="course-card flex-grow-1">
-  <h5 class="fw-semibold mb-3 bi-bar-chart"> Your Stats</h5>
-
-  <div class="row g-3">
-
-    <!-- Pending Assignments -->
-    <div class="col-md-4">
-      <div class="stat-card">
-        <h6>📝 Pending Assignments</h6>
-        <h4>{{ pending_count }}</h4>
+        {% empty %}
+          <p class="text-muted mb-0">No leaderboard data available.</p>
+        {% endfor %}
       </div>
     </div>
-
-    <!-- Ongoing Courses -->
-    <div class="col-md-4">
-      <div class="stat-card">
-        <h6>📚 Ongoing Courses</h6>
-        <h4>{{ enrollments|length }}</h4>
-      </div>
-    </div>
-
-    <!-- Completed Courses -->
-    <div class="col-md-4">
-      <div class="stat-card">
-        <h6>✅ Completed Courses</h6>
-        <h4>{{ completed_courses_count }}</h4>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-    </div>
-
-    <!-- RIGHT -->
-    <div class="col-lg-3 d-flex flex-column gap-4 h-100">
-
-      <!-- ANNOUNCEMENT -->
-      {% if latest_announcement %}
-      <div class="course-card ">
-  <div class="d-flex justify-content-between align-items-start">
-
-    <div>
-      <h6 class="fw-semibold bi-megaphone"> -Announcement</h6>
-
-      <p class="small mb-1">
-        {{ latest_announcement.title }}
-      </p>
-
-      <small class="text-muted">
-        {{ latest_announcement.created_at|date:"M d, Y" }}
-      </small>
-    </div>
-
-    <a href="{% url 'global_announcement_list' %}" class="btn btn-sm">
-      View
-    </a>
-
-  </div>
-</div>
-      {% endif %}
-
-      <!-- ACTIVITY -->
-      <div class="course-card ">
-        <h6 class="fw-semibold bi-clipboard-check"> -Activity</h6>
-
-        <p class="small mb-1">📝 Assignments: {{ pending_count }}</p>
-        <p class="small mb-1">📚 Classes: {{ remaining_classes }}</p>
-        <p class="small mb-1">🎓 Courses: {{ enrollments|length }}</p>
-
-        <hr>
-
-        <small class="text-muted">
-          Keep pushing 🚀
-        </small>
-      </div>
-
-      <!-- TOP INSTRUCTORS -->
-      <div class="course-card right-grow">
-
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="fw-semibold mb-0 bi bi-trophy"> -Top Instructors</h6>
-
-    <a href="{% url 'leaderboard' %}" class="btn btn-sm">
-      View All
-    </a>
-  </div>
-
-  {% for instructor in top_instructors %}
-  <div class="d-flex align-items-center gap-2 mb-3">
-
-    <img src="{% if instructor.profile.profile_pic %}{{ instructor.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
-         class="profile-img-sm">
-
-    <small>{{ instructor.username }}</small>
-
-  </div>
-  {% endfor %}
-
-</div>
-
-    </div>
-
   </div>
 
 {% elif is_instructor %}
-
-<div class="row g-4 align-items-stretch">
-
-  <!-- LEFT -->
-  <div class="col-lg-9">
-
-    <!-- INSTRUCTOR CARD -->
-    <div class="course-card d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h4 class="fw-bold">Welcome , {{ user.username }} 👨‍🏫</h4>
-        <p class="text-muted mb-0">
-          {{ courses|length }} courses · {{ students|length }} students
-        </p>
-      </div>
-
-      <img src="{% if user.profile.profile_pic %}{{ user.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
-           class="profile-img">
-    </div>
-
-    <!-- YOUR COURSES -->
-    <div class="course-card mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-semibold"> Your Courses</h5>
-        <a href="{% url 'create_course' %}" class="btn btn-sm">+ Create</a>
-      </div>
-
-      {% for course in courses|slice:":3" %}
-      <div class="deadline-item d-flex justify-content-between align-items-center mb-2">
-
-        <div>
-          <strong>{{ course.title }}</strong><br>
-          <small class="text-muted">
-            {{ course.student_count }} students
-          </small>
-        </div>
-
-        <a href="{% url 'course_detail' course.id %}" class="btn btn-sm">
-          View
-        </a>
-
-      </div>
-      {% empty %}
-      <p class="text-muted small">No courses created yet</p>
-      {% endfor %}
-    </div>
-
-
-    <!-- STATS -->
-    <div class="course-card">
-      <h5 class="fw-semibold mb-3"> Instructor Stats</h5>
-
-      <div class="row g-3">
-
-        <div class="col-md-4">
-          <div class="stat-card">
-            <h6>📚 Courses</h6>
-            <h4>{{ courses|length }}</h4>
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="course-card mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div>
+            <h4 class="mb-1">Instructor Workspace</h4>
+            <p class="section-subheading mb-0">{{ courses|length }} courses, {{ students|length }} students, and {{ total_assignments }} assignments tracked.</p>
           </div>
+          <img src="{% if user.profile.profile_pic %}{{ user.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}" class="profile-img" alt="Profile" />
+        </div>
+      </div>
+
+      <div class="course-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Your Courses</h5>
+          <a href="{% url 'create_course' %}" class="btn btn-sm">Create Course</a>
         </div>
 
-        <div class="col-md-4">
-          <div class="stat-card">
-            <h6>👨‍🎓 Students</h6>
-            <h4>{{ students|length }}</h4>
+        {% for course in courses|slice:":5" %}
+          <div class="deadline-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ course.title }}</strong>
+              <div class="small text-muted">{{ course.student_count }} students</div>
+            </div>
+            <a href="{% url 'course_detail' course.id %}" class="btn btn-sm">Open</a>
           </div>
-        </div>
+        {% empty %}
+          <p class="text-muted mb-0">No courses created yet.</p>
+        {% endfor %}
+      </div>
 
-        <div class="col-md-4">
-          <div class="stat-card">
-            <h6>📝 Assignments</h6>
-            <h4>{{ total_assignments }}</h4>
-          </div>
-        </div>
+    </div>
 
+    <div class="col-lg-4">
+      {% if latest_announcement %}
+        <div class="course-card mb-4">
+          <h5 class="mb-2">Latest Announcement</h5>
+          <p class="mb-1 fw-semibold">{{ latest_announcement.title }}</p>
+          <p class="small text-muted mb-3">{{ latest_announcement.created_at|date:"M d, Y" }}</p>
+          <a href="{% url 'global_announcement_list' %}" class="btn btn-sm">Read More</a>
+        </div>
+      {% endif %}
+
+      <div class="course-card">
+        <h5 class="mb-3">Pending Work</h5>
+        <div class="stat-card mb-2"><div class="small text-muted">Enrollment Requests</div><strong>{{ pending_enrollments_count }}</strong></div>
+        <div class="stat-card mb-2"><div class="small text-muted">Submission Reviews</div><strong>{{ pending_submissions_count }}</strong></div>
+        <div class="stat-card mb-3"><div class="small text-muted">Result Publishing</div><strong>{{ pending_results_count }}</strong></div>
+        <a href="{% url 'manage_enrollments' %}" class="btn btn-sm w-100 mb-2">Manage Enrollments</a>
+        <a href="{% url 'instructor_latest_submissions' %}" class="btn btn-sm w-100 mb-2">Review Submissions</a>
+        <a href="{% url 'redirect_to_publish' %}" class="btn btn-sm w-100">Publish Results</a>
       </div>
     </div>
-
   </div>
-
-  <!-- RIGHT -->
-  <div class="col-lg-3 d-flex flex-column gap-4 h-100">
-
-    <!-- ANNOUNCEMENT -->
-    {% if latest_announcement %}
-    <div class="course-card">
-  <div class="d-flex justify-content-between align-items-start">
-
-    <div>
-      <h6 class="fw-semibold"> Announcement</h6>
-
-      <p class="small mb-1">
-        {{ latest_announcement.title }}
-      </p>
-
-      <small class="text-muted">
-        {{ latest_announcement.created_at|date:"M d, Y" }}
-      </small>
-    </div>
-
-    <a href="{% url 'global_announcement_list' %}" class="btn btn-sm">
-      View
-    </a>
-
-  </div>
-</div>
-    {% endif %}
-
-    <!-- ACTIVITY -->
-    <div class="course-card">
-      <h6 class="fw-semibold">📊 Activity</h6>
-
-      <p class="small mb-1">📚 Courses: {{ courses|length }}</p>
-      <p class="small mb-1">👨‍🎓 Students: {{ students|length }}</p>
-
-      <hr>
-
-      <small class="text-muted">
-        Manage and grow 🚀
-      </small>
-    </div>
-
-<div class="course-card right-grow">
-  <h6 class="fw-semibold">📥 Pending Work</h6>
-
-  <p class="small mb-1">
-    ⏳ Enrollments: {{ pending_enrollments_count }}
-  </p>
-
-  <p class="small mb-1">
-    📝 Submissions: {{ pending_submissions_count }}
-  </p>
-
-  <p class="small mb-2">
-    ⚠️ Late: {{ late_submissions_count }}
-  </p>
-
-  <hr>
-
-  <a href="{% url 'manage_enrollments' %}" class="btn w-100 mb-2">
-    Manage Enrollments
-  </a>
-
-  <a href="{% url 'instructor_latest_submissions' %}" class="btn w-100 mb-2">
-    Review Submissions
-  </a>
-
-  <!-- NEW: ANALYTICS BUTTON -->
-  <a href="{% url 'instructor_analytics' %}" class="btn w-100">
-    View Analytics
-  </a>
-</div>
-  </div>
-
-</div>
-
 
 {% elif is_moderator %}
-
-<div class="row g-4 align-items-stretch">
-
-  <!-- LEFT -->
-  <div class="col-lg-9">
-
-    <!-- MODERATOR CARD -->
-    <div class="course-card d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h4 class="fw-bold">Welcome, {{ user.username }} 👑</h4>
-        <p class="text-muted mb-0">
-          {{ total_students }} students · {{ total_instructors }} instructors · {{ total_courses }} courses
-        </p>
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="course-card mb-4">
+        <h4 class="mb-1">Moderator Control Center</h4>
+        <p class="section-subheading mb-0">Monitor users, course growth, and approval queues from one place.</p>
+        <div class="row g-3 mt-2">
+          <div class="col-md-4"><div class="stat-card text-center"><div class="small text-muted">Students</div><strong>{{ total_students }}</strong></div></div>
+          <div class="col-md-4"><div class="stat-card text-center"><div class="small text-muted">Instructors</div><strong>{{ total_instructors }}</strong></div></div>
+          <div class="col-md-4"><div class="stat-card text-center"><div class="small text-muted">Courses</div><strong>{{ total_courses }}</strong></div></div>
+        </div>
       </div>
 
-      <img src="{% if user.profile.profile_pic %}{{ user.profile.profile_pic.url }}{% else %}{% static 'images/default_profile.jpg' %}{% endif %}"
-           class="profile-img">
-    </div>
+      <div class="course-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Pending Instructor Approvals</h5>
+          <a href="{% url 'instructors' %}" class="btn btn-sm btn-primary">Open Queue</a>
+        </div>
 
-    <!-- PLATFORM OVERVIEW -->
-    <div class="course-card mb-4">
-      <h5 class="fw-semibold mb-3">📊 Platform Overview</h5>
-
-      <div class="row g-3">
-
-        <div class="col-md-4">
-          <div class="stat-card">
-            <h6>👨‍🎓 Students</h6>
-            <h4>{{ total_students }}</h4>
+        {% for instructor in pending_instructors|slice:":3" %}
+          <div class="deadline-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ instructor.user.username }}</strong>
+              <div class="small text-muted">{{ instructor.department.name|default:"Department not set" }}</div>
+            </div>
+            <a href="{% url 'instructors'%}" class="btn btn-outline-primary">Review</a>
           </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="stat-card">
-            <h6>👨‍🏫 Instructors</h6>
-            <h4>{{ total_instructors }}</h4>
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="stat-card">
-            <h6>📚 Courses</h6>
-            <h4>{{ total_courses }}</h4>
-          </div>
-        </div>
-
+        {% empty %}
+          <p class="text-muted mb-0">No pending approvals right now.</p>
+        {% endfor %}
       </div>
     </div>
 
-    <!-- PENDING INSTRUCTORS -->
-    <div class="course-card mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-semibold">🧾 Pending  Approvals</h5>
-
-        <a href="{% url 'instructors' %}" class="btn btn-sm">
-          View All
-        </a>
-      </div>
-
-      {% for instructor in pending_instructors|slice:":3" %}
-      <div class="deadline-item d-flex justify-content-between align-items-center mb-2">
-
-        <div>
-          <strong>{{ instructor.user.username }}</strong><br>
-          <small class="text-muted">
-            {{ instructor.department.name }}
-          </small>
+    <div class="col-lg-4">
+      {% if latest_announcement %}
+        <div class="course-card mb-4">
+          <h5 class="mb-2">Latest Announcement</h5>
+          <p class="mb-1 fw-semibold">{{ latest_announcement.title }}</p>
+          <p class="small text-muted mb-3">{{ latest_announcement.created_at|date:"M d, Y" }}</p>
+          <a href="{% url 'global_announcement_list' %}" class="btn btn-sm">Read More</a>
         </div>
+      {% endif %}
 
-        <a href="{% url 'instructor_detail' instructor.user.id %}" class="btn btn-sm">
-  View
-</a>
-
-      </div>
-      {% empty %}
-      <p class="text-muted small">No pending approvals</p>
-      {% endfor %}
-    </div>
-
-  </div>
-
-  <!-- RIGHT -->
-<div class="col-lg-3 d-flex flex-column gap-4 align-self-stretch">
-
-    <!-- ANNOUNCEMENT -->
-    {% if latest_announcement %}
-    <div class="course-card">
-      <div class="d-flex justify-content-between align-items-start">
-
-        <div>
-          <h6 class="fw-semibold">📢 Announcement</h6>
-
-          <p class="small mb-1">
-            {{ latest_announcement.title }}
-          </p>
-
-          <small class="text-muted">
-            {{ latest_announcement.created_at|date:"M d, Y" }}
-          </small>
-        </div>
-
-        <a href="{% url 'global_announcement_list' %}" class="btn btn-sm">
-          View
-        </a>
-
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- ACTIVITY -->
-    <div class="course-card">
-      <h6 class="fw-semibold">📊 Activity</h6>
-
-      <p class="small mb-1">👨‍🎓 Students: {{ total_students }}</p>
-      <p class="small mb-1">👨‍🏫 Instructors: {{ total_instructors }}</p>
-      <p class="small mb-1">📚 Courses: {{ total_courses }}</p>
-
-      <hr>
-
-      <small class="text-muted">
-        System running smoothly 🚀
-      </small>
-    </div>
-
-<!-- Chart card — fixed height instead of growing -->
-<div class="course-card" style="height: fit-content;">
-  <h6 class="fw-semibold">📊 Department Distribution</h6>
-
-  <div style="max-height: 120px;">   {# ← constrain the chart height #}
-    <canvas id="deptChart"></canvas>
-  </div>
-
-  <hr>
-  <a href="{% url 'moderator_stats' %}" class="btn w-100">View Analytics</a>
+      <div class="course-card">
+        <h5 class="mb-3">Year Distribution</h5>
+        <div class="chart-wrapper">
+  <canvas id="yearChart"></canvas>
 </div>
-
+        <a href="{% url 'moderator_stats' %}" class="btn btn-sm w-100 mt-3">View Analytics</a>
+      </div>
+    </div>
+  </div>
 {% endif %}
-</div>
+{% endblock %}
 
-<style>
-
-  .right-grow {
-  flex-grow: 1;
-  min-height: 0;
-}
-.profile-img {
-  width: 55px;
-  height: 55px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-img-sm {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-}
-
-.carousel-container {
-  overflow: hidden;
-}
-.bg-animation {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  overflow: hidden;
-}
-
-.bg-animation span {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.12;
-  animation: float 18s infinite ease-in-out;
-}
-
-.bg-animation span:nth-child(1) {
-  width: 220px;
-  height: 220px;
-  background: #0d6efd;
-  top: 15%;
-  left: 10%;
-}
-
-.bg-animation span:nth-child(2) {
-  width: 300px;
-  height: 300px;
-  background: #6610f2;
-  top: 60%;
-  left: 75%;
-}
-
-.bg-animation span:nth-child(3) {
-  width: 180px;
-  height: 180px;
-  background: #20c997;
-  top: 40%;
-  left: 40%;
-}
-
-.course-card {
-  border: 1px solid rgba(13, 110, 253, 0.4);
-  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.2),
-              0 0 12px rgba(13, 110, 253, 0.25);
-  transition: all 0.3s ease;
-}
-
-@keyframes float {
-  0% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-40px) scale(1.08); }
-  100% { transform: translateY(0px) scale(1); }
-}
-.carousel-track {
-  display: flex;
-  gap: 1rem;
-}
-
-.mini-course-card {
-  min-width: 200px;
-  padding: 1rem;
-  border-radius: 12px;
-  background: var(--bs-body-bg);
-  border: 1px solid rgba(13, 110, 253, 0.35);
-  transition: all 0.3s ease;
-}
-.stat-card {
-  border: 1px solid rgba(13, 110, 253, 0.35);
-  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.15),
-              0 0 10px rgba(13, 110, 253, 0.25);
-  transition: all 0.3s ease;
-}
-.deadline-item {
-  padding: 0.7rem;
-  border-left: 3px solid #0d6efd;
-  background: rgba(13,110,253,0.08);
-  border-radius: 6px;
-}
-
-.course-card .btn {
-  border-radius: 8px;
-}
-
-.stat-card {
-  padding: 1rem;
-  border-radius: 10px;
-  text-align: center;
-  background: var(--bs-body-bg);
-  border: 1px solid rgba(0,0,0,0.08);
-}
-
-.stat-card h4 {
-  margin: 0;
-  font-weight: 700;
-}
-</style>
-
-<script>
-let track = document.getElementById("courseTrack");
-let pos = 0;
-
-function animate() {
-  pos += 0.3;
-  track.style.transform = `translateX(-${pos}px)`;
-  if (pos >= track.scrollWidth / 2) pos = 0;
-  requestAnimationFrame(animate);
-}
-animate();
-</script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-const ctx = document.getElementById('deptChart');
-
-if (ctx) {
-  new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: {{ dept_labels|safe }},
-      datasets: [{
-        data: {{ dept_values|safe }},
-        borderWidth: 1
-      }]
-    },
-    options: {
-  maintainAspectRatio: false,
-  plugins: {
-    legend: false
+{% block extra_js %}
+  {% if is_moderator %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+const yearChart = new Chart(document.getElementById('yearChart'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ year_labels|safe }},
+    datasets: [{
+      data: {{ year_values|safe }},
+      backgroundColor: [
+        '#0d6efd',
+        '#20c997',
+        '#ffc107',
+        '#dc3545',
+        '#6f42c1'
+      ]
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false
+      }
+    }
   }
-}
-  });
-}
+});
 </script>
+  {% endif %}
 {% endblock %}

@@ -1,318 +1,220 @@
 {% extends "base.html" %}
-
-{% block title %}Instructor Analytics | LAP{% endblock %}
+{% block title %}Analytics | LAP Instructor{% endblock %}
 
 {% block content %}
+<div class="container py-4 ins-analytics-shell">
+  <section class="ins-analytics-hero mb-4">
+    <div>
+      <p class="ins-analytics-overline mb-1">Instructor Intelligence</p>
+      <h3 class="section-heading mb-1">Course Performance Analytics</h3>
+      <p class="section-subheading mb-0">Track engagement quality, activity patterns, and student distribution across your courses.</p>
+    </div>
+    <div class="ins-analytics-range">
+      <a href="?days=7" class="btn btn-sm {% if days == 7 %}btn-primary{% else %}btn-outline-primary{% endif %}">Last 7 Days</a>
+      <a href="?days=30" class="btn btn-sm {% if days == 30 %}btn-primary{% else %}btn-outline-primary{% endif %}">Last 30 Days</a>
+      <a href="?days=90" class="btn btn-sm {% if days == 90 %}btn-primary{% else %}btn-outline-primary{% endif %}">Last 90 Days</a>
+    </div>
+  </section>
 
-<div class="container py-4 d-flex justify-content-center">
-  <div class="overlay-box w-100" style="max-width:1100px;">
+  <section class="ins-analytics-kpis mb-4">
+    <article class="ins-analytics-kpi-card">
+      <span>Total Courses</span>
+      <strong>{{ total_courses }}</strong>
+      <small>Managed by you</small>
+    </article>
+    <article class="ins-analytics-kpi-card">
+      <span>Active Enrollments</span>
+      <strong>{{ active_enrollments }}</strong>
+      <small>Recent learners in window</small>
+    </article>
+    <article class="ins-analytics-kpi-card">
+      <span>Pending Submissions</span>
+      <strong>{{ pending_submissions }}</strong>
+      <small>Awaiting review</small>
+    </article>
+    <article class="ins-analytics-kpi-card">
+      <span>Avg Engagement</span>
+      <strong class="{% if avg_engagement < 40 %}text-danger{% elif avg_engagement < 70 %}text-warning{% else %}text-success{% endif %}">{{ avg_engagement }}%</strong>
+      <small>Submission participation rate</small>
+    </article>
+    <article class="ins-analytics-kpi-card">
+      <span>Inactive Students</span>
+      <strong>{{ inactive_students }}</strong>
+      <small>No activity in selected range</small>
+    </article>
+  </section>
 
-```
-<div class="p-4">
+  <section class="ins-analytics-insights mb-4">
+    <div class="ins-analytics-insight-card success">
+      <p class="mb-1">Top Performing Course</p>
+      {% if top_course %}
+        <h6 class="mb-1">{{ top_course.course }}</h6>
+        <strong>{{ top_course.engagement }}% engagement</strong>
+      {% else %}
+        <h6 class="mb-1">No course data yet</h6>
+        <strong>Enrollments or submissions required</strong>
+      {% endif %}
+    </div>
+    <div class="ins-analytics-insight-card warning">
+      <p class="mb-1">Needs Attention</p>
+      {% if low_course %}
+        <h6 class="mb-1">{{ low_course.course }}</h6>
+        <strong>{{ low_course.engagement }}% engagement</strong>
+      {% else %}
+        <h6 class="mb-1">No comparative baseline</h6>
+        <strong>Add more active courses to compare</strong>
+      {% endif %}
+    </div>
+    <div class="ins-analytics-insight-card neutral">
+      <p class="mb-1">Health Snapshot</p>
+      <h6 class="mb-1">{{ pending_submissions }} reviews + {{ inactive_students }} inactive students</h6>
+      <strong>Prioritize low activity cohorts this week</strong>
+    </div>
+  </section>
 
-  <h3 class="fw-bold mb-4 text-center section-heading">
-    📊 Instructor Analytics
-  </h3>
-
-  <!-- Stats Cards -->
-  <div class="row g-4">
-
-    <div class="col-md-3">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Total Courses</h6>
-          <h3 class="fw-bold">{{ total_courses }}</h3>
+  <section class="row g-4">
+    <div class="col-xl-8">
+      <div class="content-panel ins-analytics-chart-panel h-100">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h5 class="mb-1">Student Distribution</h5>
+            <p class="section-subheading mb-0">Switch between department and year cohorts</p>
+          </div>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary active" id="deptBtn" type="button">By Department</button>
+            <button class="btn btn-outline-primary" id="yearBtn" type="button">By Year</button>
+          </div>
+        </div>
+        <div class="ins-analytics-chart-layout">
+          <div class="ins-analytics-chart-wrap">
+            <canvas id="distChart"></canvas>
+          </div>
+          <div id="distLegend" class="ins-analytics-legend"></div>
         </div>
       </div>
     </div>
 
-    <div class="col-md-3">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Total Students</h6>
-          <h3 class="fw-bold">{{ total_students }}</h3>
+    <div class="col-xl-4">
+      <div class="content-panel ins-analytics-side h-100">
+        <h5 class="mb-3">Action Priorities</h5>
+        <div class="ins-analytics-side-item">
+          <span>Submission Queue</span>
+          <strong>{{ pending_submissions }} pending checks</strong>
+        </div>
+        <div class="ins-analytics-side-item">
+          <span>Engagement Watch</span>
+          <strong>{{ avg_engagement }}% average activity</strong>
+        </div>
+        <div class="ins-analytics-side-item">
+          <span>Learner Retention</span>
+          <strong>{{ inactive_students }} inactive learners</strong>
+        </div>
+        <div class="ins-analytics-note">
+          <p class="mb-0">Use this panel to decide where to intervene first: review backlog, low-engagement cohorts, then inactivity recovery.</p>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Assignments</h6>
-          <h3 class="fw-bold">{{ total_assignments }}</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Avg Completion</h6>
-          <h3 class="fw-bold">{{ avg_completion }}%</h3>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Submission Status Cards -->
-  <div class="row g-4 mt-3">
-
-    <div class="col-md-4">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Approved Submissions</h6>
-          <h4 class="fw-bold text-success">{{ approved_submissions }}</h4>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Rejected Submissions</h6>
-          <h4 class="fw-bold text-danger">{{ rejected_submissions }}</h4>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card shadow-sm text-center h-100">
-        <div class="card-body">
-          <h6 class="text-muted">Pending Review</h6>
-          <h4 class="fw-bold text-warning">{{ pending_submissions }}</h4>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Charts Row -->
-  <div class="row g-4 mt-4">
-
-    <!-- Students per Course -->
-    <div class="col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-body">
-
-          <h6 class="fw-semibold mb-3">
-            📊 Students per Course
-          </h6>
-
-          <canvas id="courseChart" style="height:300px;"></canvas>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Submission Status -->
-    <div class="col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-body">
-
-          <h6 class="fw-semibold mb-3">
-            🍩 Submission Status
-          </h6>
-
-          <canvas id="submissionChart" style="height:300px;"></canvas>
-
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Enrollment Growth Chart -->
-  <div class="row g-4 mt-4">
-
-    <div class="col-12">
-
-      <div class="card shadow-sm">
-
-        <div class="card-body">
-
-          <h6 class="fw-semibold mb-3">
-            📈 Student Enrollment Growth
-          </h6>
-
-          <canvas id="growthChart" style="height:320px;"></canvas>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- Popular Course -->
-  {% if popular_course %}
-
-  <div class="card shadow-sm mt-4">
-
-    <div class="card-body text-center">
-
-      <h5 class="fw-bold mb-2">
-        🔥 Most Popular Course
-      </h5>
-
-      <p class="mb-1">{{ popular_course.title }}</p>
-
-      <p class="text-muted small">
-        {{ popular_course.total_students }} students enrolled
-      </p>
-
-    </div>
-
-  </div>
-
-  {% endif %}
-
+  </section>
 </div>
-```
+{% endblock %}
 
-  </div>
-</div>
-
-<!-- Chart.js -->
-
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
+const deptData = {
+  labels: {{ dept_labels|safe }},
+  data: {{ dept_counts|safe }}
+};
 
-// =======================
-// Students per Course
-// =======================
+const yearData = {
+  labels: {{ year_labels|safe }},
+  data: {{ year_counts|safe }}
+};
 
-const courseLabels = {{ course_labels|safe }};
-const courseStudents = {{ course_students|safe }};
+const ctx = document.getElementById("distChart");
+const legend = document.getElementById("distLegend");
+const palette = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#14b8a6",
+  "#ec4899",
+  "#f97316"
+];
 
-new Chart(
-document.getElementById("courseChart"),
-{
-type: "bar",
+function renderLegend(labels, data) {
+  const total = data.reduce((sum, item) => sum + Number(item || 0), 0);
+  if (!labels.length || !total) {
+    legend.innerHTML = '<div class="inline-empty w-100">No distribution data available in this period.</div>';
+    return;
+  }
 
-data: {
-labels: courseLabels,
-
-datasets: [{
-label: "Students Enrolled",
-data: courseStudents,
-backgroundColor: "rgba(54,162,235,0.8)",
-borderColor: "rgba(54,162,235,1)",
-borderWidth: 1,
-borderRadius: 8,
-barThickness: 40
-}]
-},
-
-options: {
-responsive:true,
-
-plugins:{
-legend:{display:false}
-},
-
-scales:{
-x:{
-grid:{display:false},
-ticks:{maxRotation:25,minRotation:25}
-},
-
-y:{
-beginAtZero:true,
-grid:{color:"rgba(0,0,0,0.05)"},
-ticks:{stepSize:1}
+  legend.innerHTML = labels.map((label, index) => {
+    const value = Number(data[index] || 0);
+    const share = total ? ((value / total) * 100).toFixed(1) : "0.0";
+    return `
+      <div class="ins-analytics-legend-item">
+        <i style="background:${palette[index % palette.length]};"></i>
+        <span>${label}</span>
+        <strong>${value} (${share}%)</strong>
+      </div>
+    `;
+  }).join("");
 }
-}
-}
-}
-);
 
+const chart = new Chart(ctx, {
+  type: "doughnut",
+  data: {
+    labels: deptData.labels,
+    datasets: [{
+      data: deptData.data,
+      backgroundColor: palette,
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "72%",
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: "#111827",
+        padding: 10,
+        titleColor: "#fff",
+        bodyColor: "#dbeafe",
+        callbacks: {
+          label: function(ctx) {
+            return ctx.label + ": " + ctx.raw;
+          }
+        }
+      }
+    }
+  }
+});
 
-// =======================
-// Submission Status
-// =======================
+renderLegend(deptData.labels, deptData.data);
 
-new Chart(
-document.getElementById("submissionChart"),
-{
-type:"doughnut",
+document.getElementById("deptBtn").onclick = function () {
+  chart.data.labels = deptData.labels;
+  chart.data.datasets[0].data = deptData.data;
+  chart.update();
+  renderLegend(deptData.labels, deptData.data);
 
-data:{
-labels:["Approved","Rejected","Pending"],
+  this.classList.add("active");
+  document.getElementById("yearBtn").classList.remove("active");
+};
 
-datasets:[{
-data:[
-{{ approved_submissions }},
-{{ rejected_submissions }},
-{{ pending_submissions }}
-],
+document.getElementById("yearBtn").onclick = function () {
+  chart.data.labels = yearData.labels;
+  chart.data.datasets[0].data = yearData.data;
+  chart.update();
+  renderLegend(yearData.labels, yearData.data);
 
-backgroundColor:[
-"#22c55e",
-"#ef4444",
-"#f59e0b"
-],
-
-borderWidth:0
-}]
-},
-
-options:{
-responsive:true,
-cutout:"65%",
-
-plugins:{
-legend:{position:"bottom"}
-}
-}
-}
-);
-
-
-// =======================
-// Enrollment Growth
-// =======================
-
-const growthLabels = {{ growth_labels|safe }};
-const growthCounts = {{ growth_counts|safe }};
-
-new Chart(
-document.getElementById("growthChart"),
-{
-type:"line",
-
-data:{
-labels:growthLabels,
-
-datasets:[{
-label:"New Enrollments",
-data:growthCounts,
-borderColor:"#3b82f6",
-backgroundColor:"rgba(59,130,246,0.15)",
-fill:true,
-tension:0.4,
-pointRadius:4,
-pointBackgroundColor:"#3b82f6"
-}]
-},
-
-options:{
-responsive:true,
-
-plugins:{
-legend:{display:false}
-},
-
-scales:{
-x:{grid:{display:false}},
-y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"}}
-}
-}
-}
-);
-
+  this.classList.add("active");
+  document.getElementById("deptBtn").classList.remove("active");
+};
 </script>
-
 {% endblock %}

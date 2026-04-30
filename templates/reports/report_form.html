@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container py-4">
+  <div class="content-panel">
+
+
+<h4 class="mb-3">Report Issue</h4>
+
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <!-- TYPE -->
+  <div class="mb-3">
+    <label class="form-label">What are you reporting?</label>
+    {{ form.report_type }}
+  </div>
+
+  <!-- COURSE -->
+  <div class="mb-3" id="course-field">
+    <label class="form-label">Select Course</label>
+    {{ form.course }}
+  </div>
+
+  <!-- USER -->
+  <div class="mb-3" id="user-field">
+    <label class="form-label">Select User</label>
+    {{ form.reported_user }}
+  </div>
+
+  <!-- REASON -->
+  <div class="mb-3">
+    <label class="form-label">Reason</label>
+    {{ form.reason }}
+  </div>
+
+  <!-- DESCRIPTION -->
+  <div class="mb-3">
+    <label class="form-label">Description (optional)</label>
+    {{ form.description }}
+  </div>
+
+  <!-- ATTACHMENT -->
+  <div class="mb-3">
+    <label class="form-label">Attachment (Proof)</label>
+    {{ form.attachment }}
+    <small class="text-muted d-block mt-1">
+      Upload screenshot, PDF, or any supporting file (optional)
+    </small>
+  </div>
+
+  <button type="submit" class="btn btn-danger w-100">
+    Submit Report
+  </button>
+
+</form>
+
+
+  </div>
+</div>
+
+<script>
+  function toggleFields() {
+    const type = document.getElementById("id_report_type").value;
+    const courseField = document.getElementById("course-field");
+    const userField = document.getElementById("user-field");
+
+    courseField.style.display = (type === "course") ? "block" : "none";
+    userField.style.display = (type === "user") ? "block" : "none";
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const typeSelect = document.getElementById("id_report_type");
+
+    toggleFields();
+    typeSelect.addEventListener("change", toggleFields);
+  });
+</script>
+
+{% endblock %}

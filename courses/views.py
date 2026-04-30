@@ -5,10 +5,10 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Avg
 from django.utils import timezone
-from .models import Course, Lesson, Enrollment, Profile, Category, Assignment, Submission, Announcement, Department, LessonDownload, Notification, CourseResult
-from .forms import CourseForm, LessonForm, StudentRegistrationForm, AssignmentForm, SubmissionForm, AnnouncementForm, InstructorRegistrationForm, ProfileUpdateForm
+from .models import Course, Lesson, Enrollment, Profile, Category, Assignment, Submission, Announcement, Department, LessonDownload, Notification, CourseResult, CourseFeedback, Report
+from .forms import CourseForm, LessonForm, StudentRegistrationForm, AssignmentForm, SubmissionForm, AnnouncementForm, InstructorRegistrationForm, ProfileUpdateForm, CourseFeedbackForm, ReportForm
 from django.views.decorators.cache import never_cache
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
@@ -25,21 +25,73 @@ def register_student(request):
         form = StudentRegistrationForm()
     return render(request, 'auth/register_student.html', {'form': form, 'page_title': 'Student Registration'})
 
-def login_student(request):
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+
+def _handle_login(request, role):
     error = None
+
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
         user = authenticate(request, username=username, password=password)
+
         if user is not None:
-            if not user.profile.is_instructor:
-                login(request, user)
-                return redirect('dashboard')
-            else:
-                error = "⚠️ You are not a student. Use the instructor tab."
+
+            # 🔒 Safety check
+            if not hasattr(user, 'profile'):
+                error = "Profile not found."
+                return error, None
+
+            profile = user.profile
+
+            # 🚫 GLOBAL SUSPENSION CHECK
+            if profile.is_suspended:
+                error = "🚫 Your account has been suspended."
+                return error, None
+
+            # 🎯 ROLE HANDLING
+            if role == "student":
+                if profile.is_instructor:
+                    error = "⚠️ You are not a student. Use the instructor tab."
+                    return error, None
+
+            elif role == "instructor":
+                if not profile.is_instructor:
+                    error = "⚠️ You are not an instructor. Use the student tab."
+                    return error, None
+
+                if not profile.is_approved:
+                    error = "⏳ Your instructor account is awaiting moderator approval."
+                    return error, None
+
+            elif role == "moderator":
+                if not profile.is_moderator:
+                    error = "⚠️ You are not authorized as a moderator."
+                    return error, None
+
+            # ✅ LOGIN SUCCESS
+            login(request, user)
+            return None, redirect('dashboard')
+
         else:
             error = "Invalid username or password."
-    return render(request, 'auth/login.html', {'student_error': error, 'show_tab': 'student'})
+
+    return error, None
+
+
+def login_student(request):
+    error, response = _handle_login(request, "student")
+    if response:
+        return response
+
+    return render(request, 'auth/login.html', {
+        'student_error': error,
+        'show_tab': 'student'
+    })
 
 
 def register_instructor(request):
@@ -67,40 +119,24 @@ def register_instructor(request):
 
 
 def login_instructor(request):
-    error = None
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            if user.profile.is_instructor:
-                if not user.profile.is_approved:
-                    error = "⏳ Your instructor account is awaiting moderator approval."
-                else:
-                    login(request, user)
-                    return redirect('dashboard')
-            else:
-                error = "⚠️ You are not an instructor. Use the student tab."
-        else:
-            error = "Invalid username or password."
-    return render(request, 'auth/login.html', {'instructor_error': error, 'show_tab': 'instructor'})
+    error, response = _handle_login(request, "instructor")
+    if response:
+        return response
+
+    return render(request, 'auth/login.html', {
+        'instructor_error': error,
+        'show_tab': 'instructor'
+    })
 
 def login_moderator(request):
-    error = None
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            if hasattr(user, 'profile') and user.profile.is_moderator:
-                login(request, user)
-                return redirect('dashboard')  
-            else:
-                error = "⚠️ You are not authorized as a moderator."
-        else:
-            error = "Invalid username or password."
-    
-    return render(request, 'auth/login.html', {'moderator_error': error, 'show_tab': 'moderator'})
+    error, response = _handle_login(request, "moderator")
+    if response:
+        return response
+
+    return render(request, 'auth/login.html', {
+        'moderator_error': error,
+        'show_tab': 'moderator'
+    })
 
 
 @login_required
@@ -113,6 +149,8 @@ def home(request):
     return render(request, 'index.html', {'latest_courses': latest_courses})
 
 
+
+from django.db.models import Count, Avg, Q
 
 def course_list(request):
     sort_by = request.GET.get('sort', 'popular')
@@ -127,7 +165,12 @@ def course_list(request):
     else:
         courses = Course.objects.all()
 
-    courses = courses.annotate(num_students=Count('enrollment'))
+    # ✅ ADD RATING + COUNT
+    courses = courses.annotate(
+        num_students=Count('enrollment'),
+        avg_rating=Avg('feedbacks__rating'),
+        feedback_count=Count('feedbacks')
+    )
 
     if category_id:
         courses = courses.filter(category_id=category_id)
@@ -153,6 +196,8 @@ def course_list(request):
         courses = courses.order_by('-created_at')
     elif sort_by == 'oldest':
         courses = courses.order_by('created_at')
+    elif sort_by == 'rating':
+        courses = courses.order_by('-avg_rating', '-feedback_count')
 
     paginator = Paginator(courses, 6)
     page_number = request.GET.get('page')
@@ -175,6 +220,11 @@ def course_list(request):
 
 @login_required
 def course_detail(request, course_id):
+
+    # 🔥 Redirect moderator
+    if request.user.profile.is_moderator:
+        return redirect('moderator_course_detail', course_id=course_id)
+
     course = get_object_or_404(Course, id=course_id)
     lessons = course.lessons.all()
 
@@ -183,7 +233,13 @@ def course_detail(request, course_id):
     submissions = {}
     assignment_due_dates = {}
 
-    if request.user.is_authenticated:
+    # ✅ Instructor override
+    is_instructor = request.user == course.created_by
+
+    if is_instructor:
+        enrolled = True
+    else:
+        # ✅ Get enrollment (only approved)
         enrollment = Enrollment.objects.filter(
             student=request.user,
             course=course,
@@ -192,30 +248,41 @@ def course_detail(request, course_id):
 
         enrolled = enrollment is not None
 
-        for assignment in course.assignments.all():
-            submission = None
+    # ✅ Assignments logic
+    assignments = course.assignments.all()
 
-            if enrollment:
-                submission = Submission.objects.filter(
-                    assignment=assignment,
-                    enrollment=enrollment
-                ).first()
+    for assignment in assignments:
 
-                assignment_due_dates[assignment.id] = (
-                    enrollment.get_assignment_due_date(assignment)
-                )
+        submission = None
 
-            submissions[assignment.id] = submission
+        # Only students have submissions
+        if enrollment:
+            submission = Submission.objects.filter(
+                assignment=assignment,
+                enrollment=enrollment
+            ).first()
+
+            assignment_due_dates[assignment.id] = (
+                enrollment.get_assignment_due_date(assignment)
+            )
+
+        submissions[assignment.id] = submission
+
+    # ✅ Feedback
+    feedbacks = course.feedbacks.select_related('student').order_by('-created_at')
+    avg_rating = feedbacks.aggregate(avg=Avg('rating'))['avg']
 
     return render(request, 'courses/course_detail.html', {
         'course': course,
         'lessons': lessons,
         'enrolled': enrolled,
+        'is_instructor': is_instructor,  # ⭐ NEW
         'submissions': submissions,
         'assignment_due_dates': assignment_due_dates,
+        'enrollment': enrollment,
+        'feedbacks': feedbacks,
+        'avg_rating': avg_rating,
     })
-
-
 
 
 def choose_registration(request):
@@ -233,19 +300,29 @@ from .models import Course, Enrollment
 @login_required
 def enroll_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
+    user = request.user
 
+    # 🚫 Block instructors & moderators
+    if user.profile.is_instructor or user.profile.is_moderator:
+        messages.error(request, "You are not allowed to enroll in courses.")
+        return redirect('course_detail', course_id=course.id)
+
+    # 🚫 Prevent instructor enrolling in own course (extra safety)
+    if user == course.created_by:
+        messages.error(request, "You cannot enroll in your own course.")
+        return redirect('course_detail', course_id=course.id)
+
+    # ✅ Get or create enrollment
     enrollment, created = Enrollment.objects.get_or_create(
-        student=request.user,
+        student=user,
         course=course,
-        defaults={'is_approved': False, 'enrolled_at': timezone.now()}
-    )
-    Notification.objects.create(
-        user=course.created_by,
-        message=f"{request.user.username} requested enrollment for {course.title}",
-        link="/instructor/enrollments/"
+        defaults={
+            'is_approved': False,
+            'enrolled_at': timezone.now()
+        }
     )
 
-    # Existing enrollment
+    # 🔁 If already exists
     if not created:
         if enrollment.is_approved:
             messages.info(request, "You are already enrolled in this course.")
@@ -254,10 +331,16 @@ def enroll_course(request, course_id):
             messages.info(request, "Your enrollment request is pending approval.")
             return render(request, 'students/pending_enrollment.html', {'course': course})
 
-    # Newly created (defaults ensure pending)
+    # 🔔 Notify instructor (only on new request)
+    Notification.objects.create(
+        user=course.created_by,
+        message=f"{user.username} requested enrollment for {course.title}",
+        link="/instructor/enrollments/"
+    )
+
+    # ✅ New request
     messages.success(request, "Your enrollment request has been sent for approval.")
     return render(request, 'students/pending_enrollment.html', {'course': course})
-
 
 from django.db.models import Q
 
@@ -270,14 +353,14 @@ def manage_enrollments(request):
     sort_by = request.GET.get('sort', 'newest')
 
     pending_enrollments = Enrollment.objects.filter(
-        course__in=instructor_courses,
+        course__created_by=request.user,
         is_approved=False
-    ).select_related('student', 'course')
+    )
 
     approved_enrollments = Enrollment.objects.filter(
-        course__in=instructor_courses,
+        course__created_by=request.user,
         is_approved=True
-    ).select_related('student', 'course')
+    )
 
     if course_id:
         pending_enrollments = pending_enrollments.filter(course_id=course_id)
@@ -331,23 +414,63 @@ def manage_enrollments(request):
 
 @login_required
 def approve_enrollment(request, enrollment_id):
-    enrollment = get_object_or_404(Enrollment, id=enrollment_id, course__created_by=request.user)
-    enrollment.is_approved = True
-    Notification.objects.create(
-        user=enrollment.student,
-        message=f"You are approved for {enrollment.course.title}",
-        link=f"/courses/{enrollment.course.id}/"
+
+    enrollment = get_object_or_404(
+        Enrollment,
+        id=enrollment_id,
+        course__created_by=request.user
     )
-    enrollment.save()
-    messages.success(request, f"{enrollment.student.username} has been approved for {enrollment.course.title}.")
+
+    if not enrollment.is_approved:
+        enrollment.is_approved = True
+        enrollment.save()
+
+        # 🔔 Notification (with type)
+        Notification.objects.create(
+            user=enrollment.student,
+            message=f"You are approved for {enrollment.course.title}",
+            link=f"/courses/{enrollment.course.id}/",
+            type="enrollment"
+        )
+
+        messages.success(
+            request,
+            f"{enrollment.student.username} has been approved for {enrollment.course.title}."
+        )
+
+    else:
+        messages.info(request, "Student is already approved.")
+
     return redirect('manage_enrollments')
 
 
 @login_required
 def remove_enrollment(request, enrollment_id):
-    enrollment = get_object_or_404(Enrollment, id=enrollment_id, course__created_by=request.user)
+
+    enrollment = get_object_or_404(
+        Enrollment,
+        id=enrollment_id,
+        course__created_by=request.user
+    )
+
+    student_name = enrollment.student.username
+    course_title = enrollment.course.title
+
     enrollment.delete()
-    messages.success(request, "Enrollment removed successfully.")
+
+    # 🔔 Optional notification (recommended)
+    Notification.objects.create(
+        user=enrollment.student,
+        message=f"You have been removed from {course_title}",
+        link="/courses/",
+        type="enrollment"
+    )
+
+    messages.success(
+        request,
+        f"{student_name} has been removed from {course_title}."
+    )
+
     return redirect('manage_enrollments')
 
 
@@ -376,6 +499,15 @@ def dashboard(request):
         total_instructors = Profile.objects.filter(
             is_instructor=True
         ).count()
+        approved_count = Profile.objects.filter(
+            is_instructor=True,
+            is_approved=True
+        ).count()
+
+        pending_count = Profile.objects.filter(
+            is_instructor=True,
+            is_approved=False
+        ).count()
 
         total_courses = Course.objects.count()
 
@@ -388,6 +520,24 @@ def dashboard(request):
         pending_instructors = all_pending_instructors[:3]
         pending_instructors_count = all_pending_instructors.count()
 
+        year_qs = (
+            Profile.objects
+            .filter(
+                is_instructor=False,
+                is_moderator=False,
+                year__isnull=False
+            )
+            .values("year")
+            .annotate(count=Count("id"))
+            .order_by("year")
+        )
+
+        year_labels = []
+        year_values = []
+
+        for item in year_qs:
+            year_labels.append(f"Year {item['year']}")
+            year_values.append(item["count"])
 
         dept_qs = (
             Profile.objects
@@ -417,10 +567,14 @@ def dashboard(request):
             # chart
             'dept_labels': dept_labels,
             'dept_values': dept_values,
+            "year_labels": year_labels,
+            "year_values": year_values,
 
             # existing
             'latest_announcement': latest_announcement,
             'unread_notifications_count': unread_notifications_count,
+
+
         })
 
     # =========================
@@ -447,25 +601,21 @@ def dashboard(request):
 
         students = list({enrollment.student for enrollment in enrollments})
 
-        # 🔥 NEW: Pending Work Metrics
+        # 🔥 Pending Work
         pending_enrollments_count = Enrollment.objects.filter(
             course__in=courses,
             is_approved=False
         ).count()
 
-        pending_submissions = Submission.objects.filter(
+        pending_submissions_count = Submission.objects.filter(
             assignment__course__in=courses,
             status="submitted"
-        ).select_related("enrollment", "assignment")
+        ).count()
 
-        pending_submissions_count = pending_submissions.count()
-
-        # Late submissions calculation
-        late_submissions_count = 0
-        for sub in pending_submissions:
-            due_date = sub.enrollment.get_assignment_due_date(sub.assignment)
-            if due_date and sub.submitted_at > due_date:
-                late_submissions_count += 1
+        pending_results_count = sum(
+            1 for e in enrollments
+            if e.progress_percentage == 100 and not hasattr(e, "course_result")
+        )
 
         return render(request, 'auth/dashboard.html', {
             'is_instructor': True,
@@ -475,10 +625,9 @@ def dashboard(request):
             'unread_notifications_count': unread_notifications_count,
             'total_assignments': total_assignments,
 
-            # ✅ NEW CONTEXT
             'pending_enrollments_count': pending_enrollments_count,
             'pending_submissions_count': pending_submissions_count,
-            'late_submissions_count': late_submissions_count,
+            'pending_results_count': pending_results_count,
         })
 
     # =========================
@@ -546,17 +695,17 @@ def dashboard(request):
     # 🎯 FINAL RENDER
     # =========================
     return render(request, 'auth/dashboard.html', {
-        'is_instructor': False,
-        'enrollments': enrollments,
-        'pending_assignments': pending_assignments,
-        'pending_count': pending_count,
-        'remaining_classes': remaining_classes,
-        'latest_announcement': latest_announcement,
-        'popular_courses': popular_courses,
-        'top_instructors': top_instructors,
-        'unread_notifications_count': unread_notifications_count,
-        'completed_courses_count': completed_courses_count,
-    })
+    'is_instructor': False,
+    'enrollments': enrollments,
+    'pending_assignments': pending_assignments,
+    'pending_count': pending_count,
+    'remaining_classes': remaining_classes,
+    'latest_announcement': latest_announcement,
+    'popular_courses': popular_courses,
+    'top_instructors': top_instructors,
+    'unread_notifications_count': unread_notifications_count,
+    'completed_courses_count': completed_courses_count,
+})
 
 
 
@@ -697,7 +846,8 @@ def submit_assignment(request, assignment_id):
     ).first()
 
     if not enrollment:
-        return HttpResponseForbidden("You are not enrolled in this course.")
+        messages.error(request, "You must enroll in this course to submit assignments.")
+        return redirect('course_detail', course_id=assignment.course.id)
 
     submissions = Submission.objects.filter(
         assignment=assignment,
@@ -911,12 +1061,13 @@ from django.db.models import Q
 @login_required
 def global_announcement_list(request):
 
+    sort = request.GET.get("sort", "latest")
+
     if request.user.profile.is_moderator:
 
-        # 👑 Moderator sees ALL announcements
         announcements = Announcement.objects.all().select_related(
             "course", "created_by"
-        ).order_by('-created_at')
+        )
 
         courses = None
 
@@ -924,7 +1075,7 @@ def global_announcement_list(request):
 
         announcements = Announcement.objects.filter(
             course__created_by=request.user
-        ).select_related("course", "created_by").order_by('-created_at')
+        ).select_related("course", "created_by")
 
         courses = Course.objects.filter(created_by=request.user)
 
@@ -937,16 +1088,22 @@ def global_announcement_list(request):
 
         announcements = Announcement.objects.filter(
             course__in=enrolled_courses
-        ).select_related("course", "created_by").order_by('-created_at')
+        ).select_related("course", "created_by")
 
         courses = None
+
+    # ✅ APPLY SORTING HERE
+    if sort == "oldest":
+        announcements = announcements.order_by("created_at")
+    else:
+        announcements = announcements.order_by("-created_at")
 
     return render(request, 'announcements/announcement_list.html', {
         'announcements': announcements,
         'courses': courses
     })
 
-    
+
 def is_moderator(user):
     return hasattr(user, 'profile') and user.profile.is_moderator
 
@@ -1087,6 +1244,9 @@ def instructors(request):
     return render(request, "moderator/instructors.html", {
         "instructors": instructors,
         "departments": departments,
+        "total_instructors_count": Profile.objects.filter(is_instructor=True).count(),
+        "approved_count": Profile.objects.filter(is_instructor=True, is_approved=True).count(),
+        "pending_count": Profile.objects.filter(is_instructor=True, is_approved=False).count(),
     })
 
 
@@ -1140,6 +1300,31 @@ def moderator_stats(request):
     ).count()
 
     total_courses = Course.objects.count()
+
+    # =========================
+    # REPORTS OVERVIEW
+    # =========================
+    total_reports = Report.objects.count()
+    pending_reports = Report.objects.filter(status="pending").count()
+    resolved_reports = Report.objects.filter(status="resolved").count()
+    recent_reports = Report.objects.filter(created_at__gte=start_date).count()
+
+    student_reporters = Report.objects.filter(
+        reported_by__profile__is_instructor=False,
+        reported_by__profile__is_moderator=False
+    )
+    instructor_reporters = Report.objects.filter(
+        reported_by__profile__is_instructor=True
+    )
+
+    student_reports = student_reporters.count()
+    instructor_reports = instructor_reporters.count()
+    recent_student_reports = student_reporters.filter(created_at__gte=start_date).count()
+    recent_instructor_reports = instructor_reporters.filter(created_at__gte=start_date).count()
+
+    report_resolution_rate = 0
+    if total_reports > 0:
+        report_resolution_rate = round((resolved_reports / total_reports) * 100, 1)
 
     # =========================
     # RECENT GROWTH
@@ -1254,9 +1439,20 @@ def moderator_stats(request):
         # Growth
         "recent_students": recent_students,
         "recent_courses": recent_courses,
+        "recent_reports": recent_reports,
 
         # Approval
         "approval_rate": approval_rate,
+
+        # Reports
+        "total_reports": total_reports,
+        "pending_reports": pending_reports,
+        "resolved_reports": resolved_reports,
+        "student_reports": student_reports,
+        "instructor_reports": instructor_reports,
+        "recent_student_reports": recent_student_reports,
+        "recent_instructor_reports": recent_instructor_reports,
+        "report_resolution_rate": report_resolution_rate,
 
         # Department Pie
         "dept_labels": dept_labels,
@@ -1273,12 +1469,15 @@ def moderator_stats(request):
 
 @login_required
 def student_detail(request, enrollment_id):
-    enrollment = get_object_or_404(
-        Enrollment,
+
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+
+    # ✅ safer permission check
+    if not Enrollment.objects.filter(
         id=enrollment_id,
-        is_approved=True,
         course__created_by=request.user
-    )
+    ).exists():
+        return HttpResponseForbidden("You are not allowed to view this student.")
 
     student = enrollment.student
 
@@ -1288,12 +1487,10 @@ def student_detail(request, enrollment_id):
         course__created_by=request.user
     ).select_related("course")
 
-    context = {
+    return render(request, "instructors/student_detail.html", {
         "student": student,
         "student_enrollments": student_enrollments,
-    }
-
-    return render(request, "instructors/student_detail.html", context)
+    })
 
 @login_required
 def student_course_detail(request, enrollment_id):
@@ -1380,19 +1577,45 @@ def instructor_latest_submissions(request):
     if not request.user.profile.is_instructor:
         return HttpResponseForbidden("Only instructors allowed.")
 
+    # ================= BASE QUERY =================
     submissions = Submission.objects.filter(
         assignment__created_by=request.user
     ).select_related(
         "assignment",
         "assignment__course",
-        "enrollment__student"
-    ).order_by("-submitted_at")
+        "enrollment__student",
+        "enrollment__student__profile"
+    )
 
+    # ================= FILTER PARAMS =================
+    search = request.GET.get('search')
+    course = request.GET.get('course')
+    status = request.GET.get('status')
+    sort = request.GET.get('sort')
+
+    # ================= FILTERING =================
+    if search:
+        submissions = submissions.filter(
+            Q(enrollment__student__username__icontains=search) |
+            Q(enrollment__student__email__icontains=search)
+        )
+
+    if course:
+        submissions = submissions.filter(
+            assignment__course_id=course
+        )
+
+    if status:
+        submissions = submissions.filter(status=status)
+
+    # ================= ORDER BASE =================
+    submissions = submissions.order_by("-submitted_at")
+
+    # ================= LATEST + ATTEMPT LOGIC =================
     latest_map = {}
     attempt_map = {}
 
     for sub in submissions:
-
         key = (sub.assignment.id, sub.enrollment.student.id)
 
         attempt_map[key] = attempt_map.get(key, 0) + 1
@@ -1417,11 +1640,20 @@ def instructor_latest_submissions(request):
 
         latest_submissions.append(sub)
 
-    latest_submissions.sort(key=lambda x: x.submitted_at, reverse=True)
+    # ================= SORTING =================
+    if sort == "oldest":
+        latest_submissions.sort(key=lambda x: x.submitted_at)
+    else:
+        latest_submissions.sort(key=lambda x: x.submitted_at, reverse=True)
+
+    # ================= EXTRA DATA (FOR FILTERS UI) =================
+    instructor_courses = Course.objects.filter(created_by=request.user)
 
     return render(request, "instructors/latest_submissions.html", {
-        "submissions": latest_submissions
+        "submissions": latest_submissions,
+        "instructor_courses": instructor_courses,
     })
+
 @login_required
 def instructor_detail(request, user_id):
     if not request.user.profile.is_moderator:
@@ -1645,13 +1877,46 @@ def my_enrolled_courses(request):
     enrollments = Enrollment.objects.filter(
         student=request.user,
         is_approved=True
-    ).select_related("course", "course__created_by")
+    ).select_related(
+        "course",
+        "course__created_by",
+        "course_result"
+    ).prefetch_related(
+        "course__assignments",
+        "submissions"
+    )
 
     for enrollment in enrollments:
-        total_assignments = enrollment.course.assignments.count()
-        submitted_assignments = enrollment.submissions.count()
-        enrollment.pending_assignments = total_assignments - submitted_assignments
+
+        assignments = enrollment.course.assignments.all()
+        total = assignments.count()
+
+        completed = 0
+
+        for assignment in assignments:
+            submissions = enrollment.submissions.filter(
+                assignment=assignment
+            )
+
+            latest = submissions.order_by("-submitted_at").first()
+
+            if not latest:
+                continue
+
+            if latest.status == "approved" or submissions.count() >= 5:
+                completed += 1
+
+        enrollment.total_assignments = total
+        enrollment.completed_assignments = completed
+        enrollment.pending_assignments = max(0, total - completed)
         enrollment.expiry_date = enrollment.course_end_date
+
+        if hasattr(enrollment, "course_result") and enrollment.course_result.graded:
+            enrollment.status = "verified"
+        elif enrollment.progress_percentage == 100:
+            enrollment.status = "completed"
+        else:
+            enrollment.status = "pending"
 
     return render(request, "students/my_courses.html", {
         "enrollments": enrollments
@@ -1671,7 +1936,8 @@ def download_lesson_material(request, lesson_id):
     ).first()
 
     if not enrollment:
-        return HttpResponseForbidden("You are not enrolled in this course.")
+        messages.error(request, "Enroll in the course to access materials.")
+        return redirect('course_detail', course_id=lesson.course.id)   
 
     if not lesson.material:
         return HttpResponseForbidden("No file available.")
@@ -1753,6 +2019,13 @@ def moderator_courses(request):
             Q(title__icontains=search) |
             Q(created_by__username__icontains=search)
         )
+    total_courses = Course.objects.count()
+
+    total_enrollments = Enrollment.objects.count()
+
+    avg_students = 0
+    if total_courses > 0:
+        avg_students = round(total_enrollments / total_courses, 1)
 
     if sort == "least_students":
         courses = courses.order_by("total_students", "-created_at")
@@ -1775,6 +2048,10 @@ def moderator_courses(request):
         "courses": courses,
         "search": search,
         "sort": sort,
+
+        "total_courses": total_courses,
+        "total_enrollments": total_enrollments,
+        "avg_students": avg_students,
     })
 
 @login_required
@@ -1939,6 +2216,8 @@ def download_certificate(request, enrollment_id):
 
     return response
 
+from django.db.models import Count
+
 @login_required
 def instructor_leaderboard(request):
 
@@ -1953,34 +2232,25 @@ def instructor_leaderboard(request):
 
         courses = Course.objects.filter(created_by=instructor)
 
-        students = Enrollment.objects.filter(
-            course__in=courses,
-            is_approved=True
-        ).count()
-
-        course_count = courses.count()
-
         enrollments = Enrollment.objects.filter(
             course__in=courses,
             is_approved=True
         )
 
-        completion_rates = [e.progress_percentage for e in enrollments]
-
-        completion_rate = 0
-        if completion_rates:
-            completion_rate = sum(completion_rates) / len(completion_rates)
-
         submissions = Submission.objects.filter(
             assignment__course__in=courses
         )
 
-        approved = submissions.filter(status="approved").count()
-        total = submissions.count()
+        students = enrollments.count()
+        course_count = courses.count()
 
-        assignment_success = 0
-        if total > 0:
-            assignment_success = (approved / total) * 100
+        completion_rates = [e.progress_percentage for e in enrollments]
+        completion_rate = sum(completion_rates) / len(completion_rates) if completion_rates else 0
+
+        total = submissions.count()
+        approved = submissions.filter(status="approved").count()
+
+        assignment_success = (approved / total) * 100 if total > 0 else 0
 
         score = (
             students * 0.4 +
@@ -1989,23 +2259,31 @@ def instructor_leaderboard(request):
             assignment_success * 0.15
         )
 
+        # 🔥 ADD THIS (TOP COURSES)
+        top_courses = courses.annotate(
+            total_students=Count("enrollment")
+        ).order_by("-total_students")[:3]
+
         leaderboard.append({
             "instructor": instructor,
             "students": students,
             "courses": course_count,
-            "completion_rate": round(completion_rate,2),
-            "assignment_success": round(assignment_success,2),
-            "score": round(score,2)
+            "completion_rate": round(completion_rate, 2),
+            "assignment_success": round(assignment_success, 2),
+            "score": round(score, 2),
+            "top_courses": list(top_courses)   # IMPORTANT
         })
 
-    leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)
+    leaderboard.sort(key=lambda x: x["score"], reverse=True)
 
-    for i, entry in enumerate(leaderboard):
-        entry["rank"] = i + 1
+    for i, entry in enumerate(leaderboard, start=1):
+        entry["rank"] = i
 
     return render(request, "leaderboard/instructor_leaderboard.html", {
         "leaderboard": leaderboard
     })
+
+
 @login_required
 def instructor_courses(request, instructor_id):
 
@@ -2024,10 +2302,12 @@ def instructor_courses(request, instructor_id):
         "courses": courses
     })
 
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
+from django.utils import timezone
+from datetime import timedelta
 from django.db.models import Count
 import json
-from django.db.models.functions import TruncDate
-from django.db.models import Count
 
 @login_required
 def instructor_analytics(request):
@@ -2037,72 +2317,423 @@ def instructor_analytics(request):
 
     courses = Course.objects.filter(created_by=request.user)
 
+    # FILTER
+    days = int(request.GET.get("days", 30))
+    if days not in [7, 30, 90]:
+        days = 30
+
+    start_date = timezone.now() - timedelta(days=days)
+
+    # KPIs
     total_courses = courses.count()
 
     enrollments = Enrollment.objects.filter(
         course__in=courses,
         is_approved=True
     )
-    enrollment_stats = (
-        Enrollment.objects
-        .filter(course__in=courses, is_approved=True)
-        .annotate(date=TruncDate("enrolled_at"))
-        .values("date")
-        .annotate(count=Count("id"))
-        .order_by("date")
-    )
 
-    growth_labels = [e["date"].strftime("%b %d") for e in enrollment_stats]
-    growth_counts = [e["count"] for e in enrollment_stats]
-    total_students = enrollments.count()
-
-    total_assignments = Assignment.objects.filter(
-        course__in=courses
+    active_enrollments = enrollments.filter(
+        enrolled_at__gte=start_date
     ).count()
 
     submissions = Submission.objects.filter(
-        assignment__course__in=courses
+        assignment__course__in=courses,
+        submitted_at__gte=start_date
     )
 
-    approved_submissions = submissions.filter(status="approved").count()
-    rejected_submissions = submissions.filter(status="rejected").count()
     pending_submissions = submissions.filter(status="submitted").count()
 
-    completion_rates = [e.progress_percentage for e in enrollments]
+    # ENGAGEMENT
+    engagement_list = []
 
-    avg_completion = 0
-    if completion_rates:
-        avg_completion = sum(completion_rates) / len(completion_rates)
+    for course in courses:
+        total = Enrollment.objects.filter(course=course, is_approved=True).count()
 
-    popular_course = courses.annotate(
-        total_students=Count("enrollment")
-    ).order_by("-total_students").first()
+        active = Submission.objects.filter(
+            assignment__course=course,
+            submitted_at__gte=start_date
+        ).values("enrollment__student").distinct().count()
 
-    # Chart 1: Students per course
-    course_stats = courses.annotate(
-        total_students=Count("enrollment")
-    )
+        engagement = round((active / total) * 100, 1) if total > 0 else 0
 
-    course_labels = [c.title for c in course_stats]
-    course_students = [c.total_students for c in course_stats]
+        engagement_list.append({
+            "course": course.title,
+            "engagement": engagement
+        })
+
+    engagement_list.sort(key=lambda x: x["engagement"], reverse=True)
+
+    top_course = engagement_list[0] if engagement_list else None
+    low_course = engagement_list[-1] if engagement_list else None
+
+    avg_engagement = round(
+        sum(e["engagement"] for e in engagement_list) / len(engagement_list),
+        1
+    ) if engagement_list else 0
+
+    # INACTIVE STUDENTS
+    active_students_ids = Submission.objects.filter(
+        assignment__course__in=courses,
+        submitted_at__gte=start_date
+    ).values_list("enrollment__student", flat=True).distinct()
+
+    inactive_students = enrollments.exclude(
+        student__in=active_students_ids
+    ).count()
+
+    # DEPARTMENT DATA
+    dept_data = enrollments.values(
+        "student__profile__department__name"
+    ).annotate(count=Count("id"))
+
+    dept_labels = [
+        d["student__profile__department__name"] or "Unknown"
+        for d in dept_data
+    ]
+    dept_counts = [d["count"] for d in dept_data]
+
+    # YEAR DATA
+    year_data = enrollments.values(
+        "student__profile__year"
+    ).annotate(count=Count("id"))
+
+    year_labels = [
+        f"Year {y['student__profile__year']}" if y["student__profile__year"] else "Unknown"
+        for y in year_data
+    ]
+    year_counts = [y["count"] for y in year_data]
 
     context = {
+        "days": days,
+
         "total_courses": total_courses,
-        "total_students": total_students,
-        "total_assignments": total_assignments,
-        "approved_submissions": approved_submissions,
-        "rejected_submissions": rejected_submissions,
+        "active_enrollments": active_enrollments,
         "pending_submissions": pending_submissions,
-        "avg_completion": round(avg_completion, 2),
-        "popular_course": popular_course,
-        "growth_labels": json.dumps(growth_labels),
-        "growth_counts": json.dumps(growth_counts),
-        "course_labels": json.dumps(course_labels),
-        "course_students": json.dumps(course_students),
+        "avg_engagement": avg_engagement,
+
+        "top_course": top_course,
+        "low_course": low_course,
+        "inactive_students": inactive_students,
+
+        "dept_labels": json.dumps(dept_labels),
+        "dept_counts": json.dumps(dept_counts),
+
+        "year_labels": json.dumps(year_labels),
+        "year_counts": json.dumps(year_counts),
     }
 
-    return render(
-        request,
-        "instructors/analytics.html",
-        context
+    return render(request, "instructors/analytics.html", context)
+
+@login_required
+def redirect_to_publish(request):
+    return redirect('pending_results_list')
+
+
+@login_required
+def pending_results_list(request):
+
+    status = request.GET.get("status", "pending")
+
+    courses = Course.objects.filter(created_by=request.user)
+
+    enrollments = Enrollment.objects.filter(
+        course__in=courses,
+        is_approved=True
+    ).select_related("student", "course")
+
+    pending_results = []
+    published_results = []
+
+    for e in enrollments:
+        if e.progress_percentage == 100:
+            if hasattr(e, "course_result"):
+                published_results.append(e)
+            else:
+                pending_results.append(e)
+
+    if status == "published":
+        results = published_results
+    else:
+        results = pending_results
+
+    return render(request, "instructors/pending_results.html", {
+        "results": results,
+        "selected_status": status
+    })
+
+from django.shortcuts import get_object_or_404, render
+from django.db.models import Count
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def instructor_detail(request, id):
+
+    instructor = get_object_or_404(User, id=id, profile__is_instructor=True)
+
+    courses = Course.objects.filter(created_by=instructor)
+
+    enrollments = Enrollment.objects.filter(
+        course__in=courses,
+        is_approved=True
     )
+
+    students = enrollments.count()
+    course_count = courses.count()
+
+    completion_rates = [e.progress_percentage for e in enrollments]
+    completion_rate = sum(completion_rates) / len(completion_rates) if completion_rates else 0
+
+    courses = courses.annotate(
+        total_students=Count("enrollment")
+    ).order_by("-total_students")
+
+    context = {
+        "instructor": instructor,
+        "courses": courses,
+        "students": students,
+        "course_count": course_count,
+        "completion_rate": round(completion_rate, 2)
+    }
+
+    return render(request, "leaderboard/instructor_detail.html", context)
+
+from django.db.models import Count
+
+from django.db.models import Count
+
+@login_required
+def instructors_list(request):
+
+    sort = request.GET.get("sort", "default")
+    department_id = request.GET.get("department")
+
+    instructors = User.objects.filter(
+        profile__is_instructor=True,
+        profile__is_approved=True
+    )
+
+    # 🔥 FILTER BY DEPARTMENT
+    if department_id:
+        instructors = instructors.filter(profile__department_id=department_id)
+
+    data = []
+
+    for instructor in instructors:
+
+        courses = Course.objects.filter(created_by=instructor)
+
+        students = Enrollment.objects.filter(
+            course__in=courses,
+            is_approved=True
+        ).count()
+
+        data.append({
+            "instructor": instructor,
+            "course_count": courses.count(),
+            "students": students
+        })
+
+    # 🔽 SORT
+    if sort == "students":
+        data.sort(key=lambda x: x["students"], reverse=True)
+    elif sort == "courses":
+        data.sort(key=lambda x: x["course_count"], reverse=True)
+    else:
+        data.sort(key=lambda x: x["instructor"].username)
+
+    # 🔥 SEND DEPARTMENTS
+    departments = Department.objects.all()
+
+    return render(request, "leaderboard/instructors_list.html", {
+        "instructors": data,
+        "selected_sort": sort,
+        "departments": departments,
+        "selected_department": department_id
+    })
+
+@login_required
+def submit_feedback(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+
+    enrollment = Enrollment.objects.filter(
+        student=request.user,
+        course=course,
+        is_approved=True
+    ).first()
+
+    if not enrollment:
+        return HttpResponseForbidden("You must be enrolled.")
+
+    if enrollment.progress_percentage < 100:
+        return HttpResponseForbidden("You can only give feedback after completing the course.")
+
+    existing = CourseFeedback.objects.filter(
+        course=course,
+        student=request.user
+    ).first()
+
+    if request.method == "POST":
+        form = CourseFeedbackForm(request.POST, instance=existing)
+        if form.is_valid():
+            feedback = form.save(commit=False)
+            feedback.course = course
+            feedback.student = request.user
+            feedback.save()
+            messages.success(request, "Feedback submitted!")
+            return redirect('course_detail', course_id=course.id)
+    else:
+        form = CourseFeedbackForm(instance=existing)
+
+    return render(request, "courses/submit_feedback.html", {
+        "form": form,
+        "course": course
+    })
+
+@login_required
+def report_general(request):
+    if request.method == "POST":
+        form = ReportForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.reported_by = request.user
+
+            # ✅ BASIC ANTI-SPAM
+            existing = Report.objects.filter(
+                reported_by=request.user,
+                report_type=report.report_type,
+                course=report.course,
+                reported_user=report.reported_user,
+                status='pending'
+            ).first()
+
+            if existing:
+                messages.warning(request, "You already submitted a similar report.")
+                return redirect('dashboard')
+
+            report.save()
+            # 🔔 Notify all moderators
+            moderators = User.objects.filter(profile__is_moderator=True)
+
+            for mod in moderators:
+                Notification.objects.create(
+                    user=mod,
+                    message=f"🚨 Report: {report.report_type} - {report.reason} by {request.user.username}",
+                    link="/moderator/reports/"
+                )
+            messages.success(request, "Report submitted successfully.")
+            return redirect('dashboard')
+
+    else:
+        form = ReportForm()
+
+    return render(request, "reports/report_form.html", {
+        "form": form
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def moderator_reports(request):
+    status = request.GET.get("status")
+
+    reports = Report.objects.select_related(
+        "reported_by",
+        "course",
+        "reported_user"
+    ).order_by("-created_at")
+
+    if status == "pending":
+        reports = reports.filter(status="pending")
+    elif status == "resolved":
+        reports = reports.filter(status="resolved")
+    else:
+        status = "all"  # 👈 important default
+
+    return render(request, "moderator/reports.html", {
+        "reports": reports,
+        "status": status,
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def resolve_report(request, report_id):
+    report = get_object_or_404(Report, id=report_id)
+
+    report.status = "resolved"
+    report.save()
+
+    messages.success(request, "Report marked as resolved.")
+    return redirect('moderator_reports')
+
+@login_required
+def moderator_course_detail(request, course_id):
+    if not request.user.profile.is_moderator:
+        return HttpResponseForbidden()
+
+    course = get_object_or_404(Course, id=course_id)
+
+    lessons = course.lessons.all()
+    assignments = course.assignments.all()
+    announcements = course.announcements.all()
+
+    feedbacks = course.feedbacks.select_related('student').order_by('-created_at')
+    avg_rating = feedbacks.aggregate(avg=Avg('rating'))['avg']
+
+    return render(request, 'moderator/course_detail.html', {
+        'course': course,
+        'lessons': lessons,
+        'assignments': assignments,
+        'announcements': announcements,
+        'feedbacks': feedbacks,
+        'avg_rating': avg_rating,
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def warn_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+
+    user.profile.warnings_count += 1
+    user.profile.save()
+
+    Notification.objects.create(
+        user=user,
+        message="⚠️ You have received a warning from moderator.",
+        link="/profile/"
+    )
+
+    messages.success(request, "User warned successfully.")
+    return redirect("moderator_reports")
+
+@login_required
+@user_passes_test(is_moderator)
+def suspend_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+
+    user.profile.is_suspended = True
+    user.profile.save()
+
+    Notification.objects.create(
+        user=user,
+        message="🚫 Your account has been suspended.",
+        link="/"
+    )
+
+    messages.warning(request, "User suspended.")
+    return redirect("moderator_reports")
+
+@login_required
+@user_passes_test(is_moderator)
+def delete_reported_course(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+
+    Notification.objects.create(
+        user=course.created_by,
+        message=f"⚠️ Your course '{course.title}' was removed by moderator.",
+        link="/dashboard/"
+    )
+
+    course.delete()
+
+    messages.success(request, "Course deleted.")
+    return redirect("moderator_reports")

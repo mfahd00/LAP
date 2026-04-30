@@ -1,179 +1,138 @@
-{% extends 'base.html' %}
-{% load static %}
-
+﻿{% extends 'base.html' %}
 {% block title %}Login | LAP{% endblock %}
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh;">
-  <div class="form-container shadow-lg p-4" style="max-width: 460px; width: 100%; border-radius: 15px;">
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <h2 class="section-heading">Welcome Back</h2>
+    </div>
 
-    <h2 class="fw-bold text-center mb-4">Welcome Back</h2>
-
-    <ul class="nav nav-tabs justify-content-between mb-4 border-0 w-100" style="gap:10px;">
-      <li class="nav-item flex-fill">
-        <button class="nav-link w-100 fw-semibold {% if show_tab == 'student' or not show_tab %}active{% endif %}"
-                data-bs-toggle="tab" data-bs-target="#student" type="button">
-          👨‍🎓 Student
+    <ul class="nav nav-tabs auth-tabs mb-4" role="tablist">
+      <li class="nav-item flex-fill" role="presentation">
+        <button class="nav-link w-100 {% if show_tab == 'student' or not show_tab %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#student" type="button" role="tab">
+          Student
         </button>
       </li>
-      <li class="nav-item flex-fill">
-        <button class="nav-link w-100 fw-semibold {% if show_tab == 'instructor' %}active{% endif %}"
-                data-bs-toggle="tab" data-bs-target="#instructor" type="button">
-          👩‍🏫 Instructor
+      <li class="nav-item flex-fill" role="presentation">
+        <button class="nav-link w-100 {% if show_tab == 'instructor' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#instructor" type="button" role="tab">
+          Instructor
         </button>
       </li>
-      <li class="nav-item flex-fill">
-        <button class="nav-link w-100 fw-semibold {% if show_tab == 'moderator' %}active{% endif %}"
-                data-bs-toggle="tab" data-bs-target="#moderator" type="button">
-          👨‍💼 Moderator
+      <li class="nav-item flex-fill" role="presentation">
+        <button class="nav-link w-100 {% if show_tab == 'moderator' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#moderator" type="button" role="tab">
+          Moderator
         </button>
       </li>
     </ul>
 
-    <div class="tab-content mt-3">
-
-      <!-- Student -->
-      <div class="tab-pane fade {% if show_tab == 'student' or not show_tab %}show active{% endif %}" id="student">
-        {% if student_error %}
-          <div class="alert alert-warning small">{{ student_error }}</div>
-        {% endif %}
-        <form method="POST" action="{% url 'login_student' %}">
+    <div class="tab-content">
+      <div class="tab-pane fade {% if show_tab == 'student' or not show_tab %}show active{% endif %}" id="student" role="tabpanel">
+        {% if student_error %}<div class="alert alert-warning small">{{ student_error }}</div>{% endif %}
+        <form method="post" action="{% url 'login_student' %}">
           {% csrf_token %}
           <div class="mb-3">
-            <label class="form-label fw-medium">Username</label>
+            <label class="form-label">Username</label>
             <input type="text" class="form-control" name="username" required>
           </div>
-          <div class="mb-2 position-relative">
-            <label class="form-label fw-medium">Password</label>
+          <div class="mb-3 position-relative">
+            <label class="form-label">Password</label>
             <input type="password" class="form-control pe-5 password-field" name="password" required>
-            <span class="toggle-password">👁️</span>
+            <span class="toggle-password" aria-hidden="true"><i class="bi bi-eye"></i></span>
           </div>
-
-          <div class="text-end mb-3">
-            <a href="{% url 'password_reset' %}" class="small text-decoration-none">
-              Forgot Password?
-            </a>
-          </div>
-
-          <button type="submit" class="btn w-100 py-2">Login as Student</button>
+          <div class="text-end mb-3"><a href="{% url 'password_reset' %}" class="small">Forgot password?</a></div>
+          <button type="submit" class="btn w-100">Login as Student</button>
         </form>
+        <div class="text-center mt-3 small">
+  Don’t have an account?
+  <a href="{% url 'register' %}" class="fw-semibold">Register here</a>
+</div>
       </div>
 
-      <!-- Instructor -->
-      <div class="tab-pane fade {% if show_tab == 'instructor' %}show active{% endif %}" id="instructor">
-        {% if instructor_error %}
-          <div class="alert alert-warning small">{{ instructor_error }}</div>
-        {% endif %}
-        <form method="POST" action="{% url 'login_instructor' %}">
+      <div class="tab-pane fade {% if show_tab == 'instructor' %}show active{% endif %}" id="instructor" role="tabpanel">
+        {% if instructor_error %}<div class="alert alert-warning small">{{ instructor_error }}</div>{% endif %}
+        <form method="post" action="{% url 'login_instructor' %}">
           {% csrf_token %}
           <div class="mb-3">
-            <label class="form-label fw-medium">Username</label>
+            <label class="form-label">Username</label>
             <input type="text" class="form-control" name="username" required>
           </div>
-          <div class="mb-2 position-relative">
-            <label class="form-label fw-medium">Password</label>
+          <div class="mb-3 position-relative">
+            <label class="form-label">Password</label>
             <input type="password" class="form-control pe-5 password-field" name="password" required>
-            <span class="toggle-password">👁️</span>
+            <span class="toggle-password" aria-hidden="true"><i class="bi bi-eye"></i></span>
           </div>
-
-          <div class="text-end mb-3">
-            <a href="{% url 'password_reset' %}" class="small text-decoration-none">
-              Forgot Password?
-            </a>
-          </div>
-
-          <button type="submit" class="btn w-100 py-2">Login as Instructor</button>
+          <div class="text-end mb-3"><a href="{% url 'password_reset' %}" class="small">Forgot password?</a></div>
+          <button type="submit" class="btn w-100">Login as Instructor</button>
         </form>
+        <div class="text-center mt-3 small">
+  Don’t have an account?
+  <a href="{% url 'register' %}" class="fw-semibold">Register here</a>
+</div>
       </div>
 
-      <!-- Moderator -->
-      <div class="tab-pane fade {% if show_tab == 'moderator' %}show active{% endif %}" id="moderator">
-        {% if moderator_error %}
-          <div class="alert alert-warning small">{{ moderator_error }}</div>
-        {% endif %}
-        <form method="POST" action="{% url 'login_moderator' %}">
+      <div class="tab-pane fade {% if show_tab == 'moderator' %}show active{% endif %}" id="moderator" role="tabpanel">
+        {% if moderator_error %}<div class="alert alert-warning small">{{ moderator_error }}</div>{% endif %}
+        <form method="post" action="{% url 'login_moderator' %}">
           {% csrf_token %}
           <div class="mb-3">
-            <label class="form-label fw-medium">Username</label>
+            <label class="form-label">Username</label>
             <input type="text" class="form-control" name="username" required>
           </div>
-          <div class="mb-2 position-relative">
-            <label class="form-label fw-medium">Password</label>
+          <div class="mb-3 position-relative">
+            <label class="form-label">Password</label>
             <input type="password" class="form-control pe-5 password-field" name="password" required>
-            <span class="toggle-password">👁️</span>
+            <span class="toggle-password" aria-hidden="true"><i class="bi bi-eye"></i></span>
           </div>
-
-          <div class="text-end mb-3">
-            <a href="{% url 'password_reset' %}" class="small text-decoration-none">
-              Forgot Password?
-            </a>
-          </div>
-
-          <button type="submit" class="btn w-100 py-2">Login as Moderator</button>
+          <div class="text-end mb-3"><a href="{% url 'password_reset' %}" class="small">Forgot password?</a></div>
+          <button type="submit" class="btn w-100">Login as Moderator</button>
         </form>
+        <div class="text-center mt-3 small">
+  Don’t have an account?
+  <a href="{% url 'register' %}" class="fw-semibold">Register here</a>
+</div>
       </div>
-
     </div>
   </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-  document.querySelectorAll(".toggle-password").forEach(function(toggle) {
-    toggle.addEventListener("click", function() {
+  document.querySelectorAll('.toggle-password').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
       const input = this.previousElementSibling;
-      if (input.type === "password") {
-        input.type = "text";
-        this.textContent = "🙈";
+      const icon = this.querySelector('i');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) icon.className = 'bi bi-eye-slash';
       } else {
-        input.type = "password";
-        this.textContent = "👁️";
+        input.type = 'password';
+        if (icon) icon.className = 'bi bi-eye';
       }
     });
   });
 </script>
 
 <style>
-  .toggle-password {
-    position: absolute;
-    right: 15px;
-    top: 38px;
-    cursor: pointer;
-    font-size: 18px;
-    user-select: none;
-  }
-
-  .form-control {
-    border-radius: 8px;
-  }
-
-  .btn {
-    background: linear-gradient(135deg, #0a58ca, #084bb5);
-    color: #fff;
-    border-radius: 10px;
-  }
-
-  .btn:hover {
-    background: linear-gradient(135deg, #2a7df5, #1a4a8c);
-  }
-  .nav-tabs .nav-link {
-  border: none;
-  background: #f8f9fa;
-  color: #333 !important;
+.nav-tabs.auth-tabs .nav-link {
+  color: var(--color-text-muted) !important;
+  background: transparent !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
   font-weight: 600;
-  border-radius: 12px;
-  transition: 0.3s ease;
 }
 
-.nav-tabs .nav-link:hover {
-  background: #e9ecef;
-  color: #000 !important;
-}
-
-.nav-tabs .nav-link.active {
-  background: linear-gradient(135deg, #0a58ca, #084bb5);
+.nav-tabs.auth-tabs .nav-link.active {
   color: #fff !important;
-  box-shadow: 0 3px 12px rgba(26, 74, 140, 0.25);
+  background: var(--gradient-accent) !important;
+  border-color: transparent !important;
+}
+
+.nav-tabs.auth-tabs .nav-link:hover {
+  color: var(--color-text) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
 }
 </style>
-
 {% endblock %}

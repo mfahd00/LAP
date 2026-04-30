@@ -1,89 +1,220 @@
-{% extends 'base.html' %}
-{% block title %}
-  Instructor Leaderboard | LAP
-{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Instructor Leaderboard | LAP{% endblock %}
 
 {% block content %}
-  <div class="container py-4 d-flex justify-content-center">
-    <div class="overlay-box w-100" style="max-width:1100px;">
-      <div class="p-4">
-        <h3 class="fw-bold mb-4 text-center section-heading">🏆 Instructor Leaderboard</h3>
+<div class="container py-4">
+  <section class="lb2-hero mb-4">
 
-        {% if leaderboard %}
-          <div class="table-responsive">
-            <table class="table align-middle shadow-sm mb-0 leaderboard-table">
-              <thead class="table-gradient text-white">
-                <tr>
-                  <th style="width:80px;">Rank</th>
-                  <th>Instructor</th>
-                  <th style="width:120px;">Students</th>
-                  <th style="width:110px;">Courses</th>
-                  <th style="width:140px;">Completion</th>
-                  <th style="width:100px;">Score</th>
-                  <th style="width:140px;">Action</th>
-                </tr>
-              </thead>
+  <!-- LEFT -->
+  <div>
+    <h2 class="section-heading">Instructor Leaderboard</h2>
+    <p class="section-subheading mb-0">
+      Clean ranking view based on student reach, delivery consistency, and assignment outcomes.
+    </p>
+  </div>
 
-              <tbody>
-                {% for entry in leaderboard %}
-                  <tr>
-                    <td class="fw-bold">
-                      {% if entry.rank == 1 %}
-                        🥇
-                      {% elif entry.rank == 2 %}
-                        🥈
-                      {% elif entry.rank == 3 %}
-                        🥉
-                      {% else %}
-                        {{ entry.rank }}
-                      {% endif %}
-                    </td>
+  <!-- RIGHT (SEARCH MOVED HERE) -->
+  <div class="lb2-hero-search">
+    <input type="text"
+           id="leaderboardSearch"
+           class="form-control"
+           placeholder="Search instructor...">
+  </div>
 
-                    <td>
-                      <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-person-circle fs-5 text-secondary"></i>
+</section>
 
-                        <div>
-                          <div class="fw-semibold">{{ entry.instructor.username }}</div>
+  {% if leaderboard %}
 
-                          <div class="text-muted small">Instructor</div>
-                        </div>
-                      </div>
-                    </td>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="lb2-board">
+          <div class="lb2-board-scroll">
+            <div class="lb2-board-head">
+              <span>Rank</span>
+              <span>Instructor</span>
+              <span>Students</span>
+              <span>Courses</span>
+              <span>Completion</span>
+              <span>Success</span>
+              <span>Score</span>
+            </div>
 
-                    <td>
-                      <span class="fw-semibold">{{ entry.students }}</span>
-                    </td>
+            {% for entry in leaderboard %}
+              <button
+                type="button"
+                class="lb2-row {% if forloop.first %}active{% endif %}"
+                data-name="{{ entry.instructor.username|lower }}"
+                data-url="{% url 'instructor_detail' entry.instructor.id %}"
+                data-rank="{{ entry.rank }}"
+                data-name-display="{{ entry.instructor.username }}"
+                data-joined="{{ entry.instructor.date_joined|date:'M Y' }}"
+                data-students="{{ entry.students }}"
+                data-courses="{{ entry.courses }}"
+                data-completion="{{ entry.completion_rate }}"
+                data-success="{{ entry.assignment_success }}"
+                data-score="{{ entry.score }}"
+                data-img="{{ entry.instructor.profile.profile_image_url }}"
+                data-c1="{% if entry.top_courses|length > 0 %}{{ entry.top_courses.0.title }}{% endif %}"
+                data-c2="{% if entry.top_courses|length > 1 %}{{ entry.top_courses.1.title }}{% endif %}"
+                data-c3="{% if entry.top_courses|length > 2 %}{{ entry.top_courses.2.title }}{% endif %}"
+              >
+                <span class="lb2-rank {% if entry.rank == 1 %}gold{% elif entry.rank == 2 %}silver{% elif entry.rank == 3 %}bronze{% endif %}">
+                  {% if entry.rank == 1 %}<i class="bi bi-trophy-fill"></i>
+                  {% elif entry.rank == 2 %}<i class="bi bi-award-fill"></i>
+                  {% elif entry.rank == 3 %}<i class="bi bi-star-fill"></i>
+                  {% else %}#{{ entry.rank }}{% endif %}
+                </span>
 
-                    <td>
-                      <span class="badge bg-primary-subtle text-primary">{{ entry.courses }}</span>
-                    </td>
+                <span class="lb2-instructor">
+                  <img src="{{ entry.instructor.profile.profile_image_url }}" class="mini-avatar" alt="Avatar">
+                  <span>
+                    <span class="lb2-name">{{ entry.instructor.username }}</span>
+                    <span class="lb2-role">Instructor</span>
+                  </span>
+                </span>
 
-                    <td>
-                      <span class="badge bg-success">{{ entry.completion_rate }}%</span>
-                    </td>
-
-                    <td class="fw-semibold text-primary">{{ entry.score }}</td>
-
-                    <td>
-                      <a href="{% url 'instructor_courses' entry.instructor.id %}" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-eye"></i>
-                        View
-                      </a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+                <span class="lb2-metric">{{ entry.students }}</span>
+                <span class="lb2-metric">{{ entry.courses }}</span>
+                <span><em class="badge badge-beg">{{ entry.completion_rate }}%</em></span>
+                <span><em class="status-pill pending">{{ entry.assignment_success }}%</em></span>
+                <span class="lb2-score">{{ entry.score }}</span>
+              </button>
+            {% endfor %}
           </div>
-        {% else %}
-          <div class="text-center py-5 text-muted">
-            <i class="bi bi-trophy fs-1 mb-3"></i>
+        </div>
+      </div>
 
-            <p class="mb-0">No instructors ranked yet.</p>
+      <div class="col-lg-5">
+        <aside class="lb2-profile p-4 h-100">
+          <div class="text-center mb-3">
+            <img id="p-img" class="profile-img mb-2" alt="Profile">
+            <div id="p-rank" class="lb2-rank-label mb-2"></div>
+            <h5 id="p-name" class="mb-0"></h5>
+            <small class="text-muted">Joined <span id="p-joined"></span></small>
           </div>
-        {% endif %}
+
+          <div class="lb2-profile-grid mb-3">
+            <div><span>Students</span><strong id="p-students"></strong></div>
+            <div><span>Courses</span><strong id="p-courses"></strong></div>
+            <div><span>Completion</span><strong id="p-completion"></strong></div>
+            <div><span>Success</span><strong id="p-success"></strong></div>
+          </div>
+
+          <div class="lb2-score-box mb-3">
+            <span>Performance Score</span>
+            <strong id="p-score"></strong>
+          </div>
+
+          <div class="lb2-top-courses mb-4">
+            <strong class="d-block mb-2">Top Courses</strong>
+            <ul id="course-list" class="mb-0"></ul>
+          </div>
+
+          <a id="view-instructor-btn" href="#" class="btn w-100">View Instructor Profile</a>
+        </aside>
       </div>
     </div>
-  </div>
+
+    <div id="leaderboardNoResults" class="overlay-box text-center py-5 mt-3 d-none">
+      <h5 class="mb-2">No matching instructors</h5>
+      <p class="text-muted mb-0">Try another search keyword.</p>
+    </div>
+  {% else %}
+    <div class="inline-empty">No instructors ranked yet.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const rows = document.querySelectorAll('.lb2-row');
+  const search = document.getElementById('leaderboardSearch');
+  const emptyState = document.getElementById('leaderboardNoResults');
+
+  const img = document.getElementById('p-img');
+  const rank = document.getElementById('p-rank');
+  const name = document.getElementById('p-name');
+  const joined = document.getElementById('p-joined');
+  const students = document.getElementById('p-students');
+  const courses = document.getElementById('p-courses');
+  const completion = document.getElementById('p-completion');
+  const success = document.getElementById('p-success');
+  const score = document.getElementById('p-score');
+  const list = document.getElementById('course-list');
+  const btn = document.getElementById('view-instructor-btn');
+
+  function labelForRank(rankNumber) {
+    if (rankNumber === '1') return 'Rank #1 • Top Performer';
+    if (rankNumber === '2') return 'Rank #2';
+    if (rankNumber === '3') return 'Rank #3';
+    return `Rank #${rankNumber}`;
+  }
+
+  function updatePanel(row) {
+    img.src = row.dataset.img || '';
+    rank.textContent = labelForRank(row.dataset.rank || '0');
+    name.textContent = row.dataset.nameDisplay || '';
+    joined.textContent = row.dataset.joined || '-';
+    students.textContent = row.dataset.students || '0';
+    courses.textContent = row.dataset.courses || '0';
+    completion.textContent = (row.dataset.completion || '0') + '%';
+    success.textContent = (row.dataset.success || '0') + '%';
+    score.textContent = row.dataset.score || '0';
+    btn.href = row.dataset.url || '#';
+
+    list.innerHTML = '';
+    ['c1', 'c2', 'c3'].forEach((key) => {
+      const value = row.dataset[key];
+      if (value) {
+        const li = document.createElement('li');
+        li.textContent = value;
+        list.appendChild(li);
+      }
+    });
+
+    if (!list.children.length) {
+      const li = document.createElement('li');
+      li.textContent = 'No course data available';
+      li.classList.add('text-muted');
+      list.appendChild(li);
+    }
+  }
+
+  function filterRows() {
+    if (!search) return;
+    const q = search.value.toLowerCase().trim();
+    let shown = 0;
+
+    rows.forEach((row) => {
+      const show = (row.dataset.name || '').includes(q);
+      row.classList.toggle('d-none', !show);
+      if (show) shown += 1;
+    });
+
+    if (emptyState) {
+      emptyState.classList.toggle('d-none', shown > 0 || rows.length === 0);
+    }
+
+    const activeVisible = document.querySelector('.lb2-row.active:not(.d-none)');
+    if (!activeVisible) {
+      const first = document.querySelector('.lb2-row:not(.d-none)');
+      if (first) {
+        rows.forEach((r) => r.classList.remove('active'));
+        first.classList.add('active');
+        updatePanel(first);
+      }
+    }
+  }
+
+  rows.forEach((row) => {
+    row.addEventListener('click', () => {
+      rows.forEach((r) => r.classList.remove('active'));
+      row.classList.add('active');
+      updatePanel(row);
+    });
+  });
+
+  if (rows.length) updatePanel(rows[0]);
+  if (search) search.addEventListener('input', filterRows);
+</script>
 {% endblock %}

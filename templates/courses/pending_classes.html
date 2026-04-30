@@ -1,22 +1,31 @@
-{% extends 'base.html' %}
-{% block content %}
-<div class="container mt-4">
-  <h3 class="mb-4 section-heading fw-bold">Pending Classes</h3>
+﻿{% extends 'base.html' %}
+{% block title %}Pending Classes | LAP{% endblock %}
 
-  {% if pending_lessons %}
-  <div class="list-group">
-    {% for item in pending_lessons %}
-    <div class="list-group-item d-flex justify-content-between align-items-center">
-      <div>
-        <strong>{{ item.lesson.title }}</strong>
-        <p class="section-heading mb-0 small">Course: {{ item.course.title }}</p>
-      </div>
-      <a href="{% url 'course_detail' item.course.id %}" class="btn btn-sm btn-outline-success">Go to Course</a>
+{% block content %}
+<div class="container py-4">
+  <div class="page-title-row">
+    <div>
+      <h3 class="section-heading">Pending Classes</h3>
+      <p class="section-subheading mb-0">Lessons you still need to complete.</p>
     </div>
-    {% endfor %}
   </div>
-  {% else %}
-  <p class="text-muted">🎉 All caught up! You have no pending classes.</p>
-  {% endif %}
+
+  <div class="content-panel">
+    {% if pending_lessons %}
+      <div class="list-group list-group-flush">
+        {% for item in pending_lessons %}
+          <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <strong>{{ item.lesson.title }}</strong>
+              <div class="small text-muted">Course: {{ item.course.title }}</div>
+            </div>
+            <a href="{% url 'course_detail' item.course.id %}" class="btn btn-sm btn-outline-success">Open Course</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="inline-empty">All caught up. You have no pending classes.</div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

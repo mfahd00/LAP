@@ -2,233 +2,251 @@
 {% block title %}Platform Analytics | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-3">
-
-  <!-- HEADER -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="container py-4 mod-analytics-shell">
+  <section class="mod-analytics-hero mb-4">
     <div>
-      <h4 class="fw-bold section-heading mb-0">📊 Platform Analytics</h4>
-      <small class="text-muted">System overview</small>
+      <p class="mod-analytics-overline mb-1">Moderator Command Center</p>
+      <h3 class="section-heading mb-1">Platform Analytics</h3>
+      <p class="section-subheading mb-0">Monitor platform growth, approval health, and where learner demand is concentrating.</p>
     </div>
-
-    <form method="get" class="d-flex gap-2">
-      <select name="days" class="form-select form-select-sm">
-        <option value="7" {% if days == 7 %}selected{% endif %}>7d</option>
-        <option value="30" {% if days == 30 %}selected{% endif %}>30d</option>
-        <option value="90" {% if days == 90 %}selected{% endif %}>90d</option>
+    <form method="get" class="mod-analytics-range-form">
+      <label for="modDays" class="small mb-0">Window</label>
+      <select id="modDays" name="days" class="form-select form-select-sm">
+        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
       </select>
-      <button class="btn btn-sm">Apply</button>
+      <button class="btn btn-sm btn-primary" type="submit">Apply</button>
     </form>
-  </div>
+  </section>
 
-  <!-- STATS -->
-  <div class="course-card mb-3">
-    <div class="row g-3">
+  <section class="mod-analytics-kpis mb-4">
+    <article class="mod-analytics-kpi-card">
+      <span>Total Instructors</span>
+      <strong>{{ total_instructors }}</strong>
+      <small>{{ approved_instructors }} approved / {{ pending_instructors }} pending</small>
+    </article>
+    <article class="mod-analytics-kpi-card">
+      <span>Approval Rate</span>
+      <strong>{{ approval_rate }}%</strong>
+      <small>Instructor verification efficiency</small>
+    </article>
+    <article class="mod-analytics-kpi-card">
+      <span>Total Students</span>
+      <strong>{{ total_students }}</strong>
+      <small>{{ recent_students }} new in this window</small>
+    </article>
+    <article class="mod-analytics-kpi-card">
+      <span>Total Courses</span>
+      <strong>{{ total_courses }}</strong>
+      <small>{{ recent_courses }} newly created</small>
+    </article>
+    <article class="mod-analytics-kpi-card">
+      <span>Total Reports</span>
+      <strong>{{ total_reports }}</strong>
+      <small>{{ recent_reports }} reported in this window</small>
+    </article>
+  </section>
 
-      <div class="col-md-3">
-        <div class="stat-card">
-          <h6>👨‍🏫 Instructors</h6>
-          <h4>{{ total_instructors }}</h4>
-        </div>
-      </div>
+  <section class="mod-analytics-reports mb-4">
+    <article class="mod-analytics-report-card">
+      <span>Pending Reports</span>
+      <strong>{{ pending_reports }}</strong>
+      <small>Needs moderator action</small>
+    </article>
+    <article class="mod-analytics-report-card">
+      <span>Resolved Reports</span>
+      <strong>{{ resolved_reports }}</strong>
+      <small>{{ report_resolution_rate }}% overall resolution rate</small>
+    </article>
+    <article class="mod-analytics-report-card">
+      <span>From Students</span>
+      <strong>{{ student_reports }}</strong>
+      <small>{{ recent_student_reports }} in last {{ days }} days</small>
+    </article>
+    <article class="mod-analytics-report-card">
+      <span>From Instructors</span>
+      <strong>{{ instructor_reports }}</strong>
+      <small>{{ recent_instructor_reports }} in last {{ days }} days</small>
+    </article>
+  </section>
 
-      <div class="col-md-3">
-        <div class="stat-card">
-          <h6>✅ Approved</h6>
-          <h4>{{ approved_instructors }}</h4>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="stat-card">
-          <h6>⏳ Pending</h6>
-          <h4>{{ pending_instructors }}</h4>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="stat-card">
-          <h6>👨‍🎓 Students</h6>
-          <h4>{{ total_students }}</h4>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- GROWTH -->
-  <div class="course-card mb-3">
-    <div class="row g-3">
-
-      <div class="col-md-6">
-        <div class="stat-card">
-          <h6>New Students ({{ days }}d)</h6>
-          <h4>{{ recent_students }}</h4>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="stat-card">
-          <h6>New Courses ({{ days }}d)</h6>
-          <h4>{{ recent_courses }}</h4>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MAIN GRID -->
-  <div class="row g-3">
-
-    <!-- LEFT -->
-    <div class="col-md-6">
-      <div class="course-card h-100">
-        <h6 class="fw-semibold mb-2">🏢 Departments</h6>
-        <canvas id="departmentChart"></canvas>
-      </div>
-    </div>
-
-    <!-- RIGHT -->
-    <div class="col-md-6 d-flex flex-column gap-3">
-
-      <div class="course-card">
-        <h6 class="fw-semibold mb-2">📊 Overview</h6>
-        <canvas id="platformChart"></canvas>
-      </div>
-
-      <div class="course-card">
-        <h6 class="fw-semibold mb-2">🏆 Top Courses</h6>
-
-        {% for item in top_courses|slice:":5" %}
-        <div class="mb-2">
-
-          <div class="d-flex justify-content-between small">
-            <span>{{ item.course.title|truncatechars:20 }}</span>
-            <span>{{ item.percentage }}%</span>
+  <section class="row g-4 mb-4">
+    <div class="col-xl-8">
+      <div class="content-panel mod-analytics-panel h-100">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h5 class="mb-1">Department Contribution</h5>
+            <p class="section-subheading mb-0">Student population distribution by department</p>
           </div>
-
-          <div class="progress" style="height:5px;">
-            <div class="progress-bar bg-success"
-                 style="width: {{ item.percentage }}%;">
-            </div>
-          </div>
-
         </div>
-        {% endfor %}
-
+        <div class="mod-analytics-chart-layout">
+          <div class="mod-analytics-chart-wrap">
+            <canvas id="departmentChart"></canvas>
+          </div>
+          <div id="departmentLegend" class="mod-analytics-legend"></div>
+        </div>
       </div>
-
     </div>
 
-  </div>
+    <div class="col-xl-4">
+      <div class="content-panel mod-analytics-panel h-100">
+        <h5 class="mb-3">Platform Mix</h5>
+        <div class="mod-analytics-mini-chart mb-3">
+          <canvas id="platformChart"></canvas>
+        </div>
+        <div class="mod-analytics-mix-grid">
+          <div>
+            <span>Instructors</span>
+            <strong>{{ total_instructors }}</strong>
+          </div>
+          <div>
+            <span>Students</span>
+            <strong>{{ total_students }}</strong>
+          </div>
+          <div>
+            <span>Courses</span>
+            <strong>{{ total_courses }}</strong>
+          </div>
+          <div>
+            <span>Approval</span>
+            <strong>{{ approval_rate }}%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <section class="row g-4">
+    <div class="col-lg-5">
+      <div class="content-panel mod-analytics-panel h-100">
+        <h5 class="mb-3">Top Categories</h5>
+        <div class="mod-analytics-list">
+          {% for category in top_categories %}
+            <article class="mod-analytics-list-item">
+              <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                <h6 class="mb-0">{{ category.name }}</h6>
+                <span class="mod-analytics-pill">{{ category.percentage }}%</span>
+              </div>
+              <p class="section-subheading mb-2">{{ category.enrollments }} enrollments</p>
+              <div class="progress mod-analytics-progress">
+                <div class="progress-bar" style="width: {{ category.percentage }}%;"></div>
+              </div>
+            </article>
+          {% empty %}
+            <div class="inline-empty">No category enrollment data available.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="content-panel mod-analytics-panel h-100">
+        <h5 class="mb-3">Top Courses by Enrollment</h5>
+        <div class="mod-analytics-list">
+          {% for item in top_courses %}
+            <article class="mod-analytics-list-item">
+              <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                <h6 class="mb-0">{{ item.course.title }}</h6>
+                <span class="mod-analytics-pill">{{ item.percentage }}%</span>
+              </div>
+              <p class="section-subheading mb-2">{{ item.enrollments }} active enrollments</p>
+              <div class="progress mod-analytics-progress">
+                <div class="progress-bar" style="width: {{ item.percentage }}%;"></div>
+              </div>
+            </article>
+          {% empty %}
+            <div class="inline-empty">No course ranking data available.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
+{% endblock %}
 
-
-
-<style>
-.analytics-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-radius: 16px;
-  transition: 0.3s ease;
-}
-
-.analytics-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-}
-
-.analytics-card .icon {
-  font-size: 28px;
-  opacity: 0.8;
-}
-
-.gradient-blue {
-  background: linear-gradient(135deg, #0d6efd, #0a58ca);
-}
-
-.gradient-green {
-  background: linear-gradient(135deg, #198754, #157347);
-}
-
-.gradient-warning {
-  background: linear-gradient(135deg, #ffc107, #ffcd39);
-}
-
-.gradient-info {
-  background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
-}
-
-.glass-card {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(6px);
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-.chart-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-  transition: 0.3s ease;
-}
-
-.chart-card:hover {
-  transform: translateY(-4px);
-}
-
-.chart-card .col-md-6:first-child {
-  border-right: 1px solid rgba(0,0,0,0.05);
-}
-</style>
-
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-const departmentChart = new Chart(document.getElementById('departmentChart'), {
-    type: 'doughnut',
-    data: {
-        labels: {{ dept_labels|safe }},
-        datasets: [{
-            data: {{ dept_values|safe }},
-            backgroundColor: [
-                '#0d6efd',
-                '#198754',
-                '#ffc107',
-                '#dc3545',
-                '#0dcaf0',
-                '#6f42c1',
-                '#fd7e14'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
+const deptLabels = {{ dept_labels|safe }};
+const deptValues = {{ dept_values|safe }};
+const deptLegend = document.getElementById('departmentLegend');
+const deptPalette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899', '#f97316'];
+
+function renderDeptLegend(labels, data) {
+  const total = data.reduce((sum, item) => sum + Number(item || 0), 0);
+  if (!labels.length || !total) {
+    deptLegend.innerHTML = '<div class="inline-empty w-100">No department distribution data available.</div>';
+    return;
+  }
+
+  deptLegend.innerHTML = labels.map((label, index) => {
+    const value = Number(data[index] || 0);
+    const share = total ? ((value / total) * 100).toFixed(1) : '0.0';
+    return `
+      <div class="mod-analytics-legend-item">
+        <i style="background:${deptPalette[index % deptPalette.length]};"></i>
+        <span>${label}</span>
+        <strong>${value} (${share}%)</strong>
+      </div>
+    `;
+  }).join('');
+}
+
+new Chart(document.getElementById('departmentChart'), {
+  type: 'doughnut',
+  data: {
+    labels: deptLabels,
+    datasets: [{
+      data: deptValues,
+      backgroundColor: deptPalette,
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111827',
+        titleColor: '#ffffff',
+        bodyColor: '#dbeafe'
+      }
     }
+  }
 });
 
-const platformChart = new Chart(document.getElementById('platformChart'), {
-    type: 'bar',
-    data: {
-        labels: ['Instructors', 'Students', 'Courses'],
-        datasets: [{
-            data: [{{ total_instructors }}, {{ total_students }}, {{ total_courses }}],
-            backgroundColor: ['#0d6efd', '#0dcaf0', '#198754']
-        }]
+renderDeptLegend(deptLabels, deptValues);
+
+new Chart(document.getElementById('platformChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Instructors', 'Students', 'Courses'],
+    datasets: [{
+      data: [{{ total_instructors }}, {{ total_students }}, {{ total_courses }}],
+      backgroundColor: ['#3b82f6', '#14b8a6', '#8b5cf6'],
+      borderRadius: 8,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111827',
+        titleColor: '#ffffff',
+        bodyColor: '#dbeafe'
+      }
     },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } }
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#9fb3da' } },
+      y: { grid: { color: 'rgba(159, 179, 218, 0.2)' }, ticks: { color: '#9fb3da', precision: 0 } }
     }
+  }
 });
 </script>
-
 {% endblock %}

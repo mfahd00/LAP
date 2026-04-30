@@ -1,0 +1,40 @@
+﻿{% extends 'base.html' %}
+{% block title %}Instructor Profile | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="content-panel text-center mb-4">
+    <img src="{{ instructor.profile.profile_image_url }}" class="profile-img mb-3" alt="Instructor">
+    <h2 class="section-heading mb-1">{{ instructor.username }}</h2>
+    <p class="section-subheading mb-2">Joined {{ instructor.date_joined|date:"F Y" }}</p>
+    {% if instructor.profile.bio %}<p class="mx-auto" style="max-width:600px;">{{ instructor.profile.bio }}</p>{% endif %}
+  </div>
+
+  <div class="kpi-grid mb-4">
+    <div class="kpi-item text-center"><div class="label">Students</div><div class="value">{{ students }}</div></div>
+    <div class="kpi-item text-center"><div class="label">Courses</div><div class="value">{{ course_count }}</div></div>
+    <div class="kpi-item text-center"><div class="label">Avg Completion</div><div class="value">{{ completion_rate }}%</div></div>
+  </div>
+
+  <div class="page-title-row">
+    <h5 class="mb-0">Courses by {{ instructor.username }}</h5>
+  </div>
+
+  <div class="row g-4">
+    {% for course in courses %}
+      <div class="col-md-6 col-lg-4">
+        <div class="course-card h-100 p-3">
+          <h6 class="mb-2">{{ course.title }}</h6>
+          <p class="small text-muted mb-3">{{ course.description|truncatechars:90 }}</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">{{ course.total_students }} students</small>
+            <a href="{% url 'course_detail' course.id %}" class="btn btn-sm">View</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="inline-empty">No courses available.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

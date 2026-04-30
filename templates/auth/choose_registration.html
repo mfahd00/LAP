@@ -1,47 +1,18 @@
-{% extends 'base.html' %}
-{% load static %}
+﻿{% extends 'base.html' %}
 {% block title %}Choose Registration | LAP{% endblock %}
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh;">
-  <div class="form-container shadow-lg p-4 text-center" style="max-width: 480px; width: 100%; border-radius: 15px;">
-    <h2 class="fw-bold mb-4">Choose Registration Type</h2>
-    <div class="d-grid gap-3">
-      <a href="{% url 'register_student' %}" class="btn btn-primary py-2">Register as Student</a>
-      <a href="{% url 'register_instructor' %}" class="btn btn-secondary py-2">Register as Instructor</a>
+<div class="auth-shell">
+  <div class="auth-card auth-card-sm text-center">
+    <h2 class="section-heading mb-2">Choose Registration Type</h2>
+    <p class="auth-subtitle mb-4">Select the account type you want to create.</p>
+
+    <div class="d-grid gap-2">
+      <a href="{% url 'register_student' %}" class="btn">Register as Student</a>
+      <a href="{% url 'register_instructor' %}" class="btn btn-primary">Register as Instructor</a>
     </div>
-    <p class="mt-3">Already have an account? <a href="{% url 'login' %}">Login here</a>.</p>
+
+    <p class="mt-3 mb-0">Already have an account? <a href="{% url 'login' %}">Login</a></p>
   </div>
 </div>
-
-<style>
-  body.light-mode .form-container {
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
-  }
-  body.dark-mode .form-container {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #0a58ca, #084bb5);
-    border: none;
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #2a7df5, #1a4a8c);
-    box-shadow: 0 3px 12px rgba(42, 125, 245, 0.4);
-  }
-
-  .btn-secondary {
-    background: linear-gradient(135deg, #198754, #0f5132);
-    border: none;
-  }
-
-  .btn-secondary:hover {
-    background: linear-gradient(135deg, #20c997, #157347);
-    box-shadow: 0 3px 12px rgba(25, 135, 84, 0.4);
-  }
-</style>
 {% endblock %}

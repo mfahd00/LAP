@@ -1,62 +1,30 @@
-{% extends 'base.html' %}
-{% block title %}Moderator Login{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Moderator Login | LAP{% endblock %}
 
 {% block content %}
-<div class="fullpage-center">
-  <div class="card shadow-sm p-4" style="max-width: 400px; width: 100%;">
-    <h3 class="card-title text-center mb-4">Moderator Login</h3>
+<div class="auth-shell">
+  <div class="auth-card auth-card-sm">
+    <div class="text-center mb-4">
+      <h2 class="section-heading">Moderator Login</h2>
+      <p class="auth-subtitle">Access platform moderation and governance tools.</p>
+    </div>
 
-    {% if error %}
-      <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-    <form method="POST" action="{% url 'login_moderator' %}">
+    <form method="post" action="{% url 'login_moderator' %}">
       {% csrf_token %}
       <div class="mb-3">
-        <label for="username" class="form-label">Username</label>
+        <label class="form-label" for="username">Username</label>
         <input type="text" name="username" id="username" class="form-control" required>
       </div>
       <div class="mb-3">
-        <label for="password" class="form-label">Password</label>
+        <label class="form-label" for="password">Password</label>
         <input type="password" name="password" id="password" class="form-control" required>
       </div>
-      <button type="submit" class="btn btn-primary">Login</button>
+      <button type="submit" class="btn w-100">Login</button>
     </form>
 
-    <p class="mt-3 text-center">
-      Don’t have an account? <a href="#">Contact Admin</a>
-    </p>
-
-
-
+    <p class="text-center mt-3 mb-0">Need access? Contact the administrator.</p>
   </div>
 </div>
-
-<style>
-  .form-control {
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background-color: rgba(255, 255, 255, 0.9);
-    transition: all 0.3s ease;
-  }
-
-  .form-control:focus {
-    border-color: #2a7df5;
-    box-shadow: 0 0 8px rgba(42, 125, 245, 0.5);
-  }
-
-  .btn {
-    background: linear-gradient(135deg, #0a58ca, #084bb5);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    transition: 0.3s;
-  }
-
-  .btn:hover {
-    background: linear-gradient(135deg, #2a7df5, #1a4a8c);
-    box-shadow: 0 3px 12px rgba(42, 125, 245, 0.4);
-  }
-</style>
 {% endblock %}

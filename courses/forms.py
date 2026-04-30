@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Lesson, Assignment, Submission, Announcement, Profile, Department
+from .models import Course, Lesson, Assignment, Submission, Announcement, Profile, Department, CourseFeedback, Report
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 class CourseForm(forms.ModelForm):
@@ -8,8 +8,27 @@ class CourseForm(forms.ModelForm):
         fields = ['title', 'description', 'category', 'difficulty', 'duration_days']
         widgets = {
             'difficulty': forms.Select(attrs={'class': 'form-select'}),
-            'duration_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'e.g. 30'}),
+            'duration_days': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '180',
+                'placeholder': 'e.g. 30'
+            }),
         }
+
+    def clean_duration_days(self):
+        duration = self.cleaned_data.get("duration_days")
+
+        if duration is None:
+            return duration
+
+        if duration < 1:
+            raise forms.ValidationError("Duration must be at least 1 day.")
+
+        if duration > 180:
+            raise forms.ValidationError("Duration cannot exceed 180 days.")
+
+        return duration
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -176,3 +195,50 @@ class ProfileUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['profile_pic'].required = False
+
+class CourseFeedbackForm(forms.ModelForm):
+    class Meta:
+        model = CourseFeedback
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.Select(attrs={'class': 'form-select'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
+        }
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = Report
+        fields = ['report_type', 'course', 'reported_user', 'reason', 'description', 'attachment']
+        widgets = {
+            'report_type': forms.Select(attrs={'class': 'form-select'}),
+            'course': forms.Select(attrs={'class': 'form-select'}),
+            'reported_user': forms.Select(attrs={'class': 'form-select'}),
+            'reason': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'attachment': forms.FileInput(attrs={'class': 'form-control'})
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        report_type = cleaned_data.get('report_type')
+        course = forms.CharField(required=False, widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'list': 'course-list',
+            'placeholder': 'Search course...'
+        }))
+
+        reported_user = forms.CharField(required=False, widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'list': 'user-list',
+            'placeholder': 'Search user...'
+        }))
+        user = cleaned_data.get('reported_user')
+
+        # ✅ VALIDATION RULES
+        if report_type == 'course' and not course:
+            self.add_error('course', 'Please select a course.')
+
+        if report_type == 'user' and not user:
+            self.add_error('reported_user', 'Please select a user.')
+
+        return cleaned_data

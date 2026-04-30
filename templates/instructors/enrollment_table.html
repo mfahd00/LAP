@@ -12,11 +12,13 @@
   {% if pending_enrollments %}
   <div class="table-responsive">
     <table class="table align-middle text-center shadow-sm">
-      <thead class="table-gradient text-white">
+      <thead class="text-white">
         <tr>
           <th>#</th>
           <th>Student</th>
           <th>Email</th>
+          <th>Department</th>
+          <th>Year</th>
           <th>Course</th>
           <th>Action</th>
         </tr>
@@ -27,16 +29,28 @@
           <td>{{ forloop.counter }}</td>
           <td>{{ enrollment.student.username }}</td>
           <td>{{ enrollment.student.email }}</td>
+
+          <td>{{ enrollment.student.profile.department.name|default:"-" }}</td>
+          <td>{{ enrollment.student.profile.year|default:"-" }}</td>
+
           <td>{{ enrollment.course.title }}</td>
+
           <td>
-            <button class="btn btn-success btn-sm ajax-action"
-                    data-url="{% url 'approve_enrollment' enrollment.id %}">
-              Approve
-            </button>
-            <button class="btn btn-danger btn-sm ajax-action"
-                    data-url="{% url 'remove_enrollment' enrollment.id %}">
-              Decline
-            </button>
+            <div class="d-flex gap-2 justify-content-center">
+
+              <!-- APPROVE -->
+              <a href="{% url 'approve_enrollment' enrollment.id %}"
+                 class="btn btn-outline-success btn-sm">
+                Approve
+              </a>
+
+              <!-- DECLINE -->
+              <a href="{% url 'remove_enrollment' enrollment.id %}"
+                 class="btn btn-outline-danger btn-sm">
+                Decline
+              </a>
+
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -58,40 +72,53 @@
   {% if approved_enrollments %}
   <div class="table-responsive">
     <table class="table align-middle text-center shadow-sm">
-      <thead class="table-gradient text-white">
+      <thead class="text-white">
         <tr>
           <th>#</th>
           <th>Student</th>
           <th>Email</th>
+          <th>Department</th>
+          <th>Year</th>
           <th>Course</th>
           <th>Action</th>
         </tr>
       </thead>
+
       <tbody>
         {% for enrollment in approved_enrollments %}
         <tr>
           <td>{{ forloop.counter }}</td>
+
           <td>{{ enrollment.student.username }}</td>
           <td>{{ enrollment.student.email }}</td>
+
+          <td>{{ enrollment.student.profile.department.name|default:"-" }}</td>
+          <td>{{ enrollment.student.profile.year|default:"-" }}</td>
+
           <td>{{ enrollment.course.title }}</td>
+
           <td>
             <div class="d-flex gap-2 justify-content-center">
 
-<a href="{% url 'student_detail' enrollment.student.id %}"
-   class="btn btn-outline-primary btn-sm">
-   View
-</a>
+              <!-- VIEW -->
+              <a href="{% url 'student_detail' enrollment.id %}"
+                 class="btn btn-sm btn-outline-info">
+                View
+              </a>
 
-<button class="btn btn-danger btn-sm ajax-action"
-        data-url="{% url 'remove_enrollment' enrollment.id %}">
-  Remove
-</button>
+              <!-- REMOVE -->
+              <a href="{% url 'remove_enrollment' enrollment.id %}"
+                 class="btn btn-outline-danger btn-sm">
+                Remove
+              </a>
 
-</div>
+            </div>
           </td>
+
         </tr>
         {% endfor %}
       </tbody>
+
     </table>
   </div>
   {% else %}

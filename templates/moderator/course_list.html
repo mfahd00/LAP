@@ -9,8 +9,8 @@
       </small>
 
       <div class="d-flex justify-content-between align-items-center">
-        <span class="badge bg-primary">
-          👥 {{ course.total_students }} Students
+        <span class="student-badge">
+          {{ course.total_students }} Students
         </span>
 
         <a href="{% url 'course_detail' course.id %}"

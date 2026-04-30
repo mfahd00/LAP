@@ -1,103 +1,36 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+{% block title %}Create Assignment | LAP{% endblock %}
 
 {% block content %}
-<div class="form-page d-flex justify-content-center align-items-center">
-  <div class="card form-card shadow-lg p-4">
-    <h3 class="text-center mb-4 fw-semibold text-primary">
-      Create Assignment for {{ course.title }}
-    </h3>
-
-    <form method="post" class="form-container">
-      {% csrf_token %}
-      
-      <div class="mb-3">
-        <label for="id_title" class="form-label fw-semibold">Title</label>
-        <input type="text" name="title" id="id_title" class="form-control" required>
+<div class="container py-4">
+  <div class="auth-shell" style="min-height:auto;">
+    <div class="auth-card">
+      <div class="text-center mb-4">
+        <h2 class="section-heading">Create Assignment</h2>
+        <p class="auth-subtitle mb-0">{{ course.title }}</p>
       </div>
 
-      <div class="mb-3">
-        <label for="id_description" class="form-label fw-semibold">Description</label>
-        <textarea name="description" id="id_description" rows="4" class="form-control" required></textarea>
-      </div>
-
-      <!-- 🕓 Relative Due Days with limit -->
-      <div class="mb-3">
-        <label for="id_relative_due_days" class="form-label fw-semibold">Relative Due Days</label>
-        <input type="number" name="relative_due_days" id="id_relative_due_days" class="form-control" min="1" max="{{ course.duration_days|add:5 }}" placeholder="e.g. 7" required>
-        <div class="form-text text-muted">
-          Number of days after enrollment this assignment is due. Maximum: {{ course.duration_days|add:5 }} days (course duration + 5 days).
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_title" class="form-label">Title</label>
+          <input type="text" name="title" id="id_title" class="form-control" required>
         </div>
-      </div>
 
-      <button type="submit" class="btn submit-btn w-100 mt-3">Create Assignment</button>
-    </form>
+        <div class="mb-3">
+          <label for="id_description" class="form-label">Description</label>
+          <textarea name="description" id="id_description" rows="4" class="form-control" required></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_relative_due_days" class="form-label">Relative Due Days</label>
+          <input type="number" name="relative_due_days" id="id_relative_due_days" class="form-control" min="1" max="{{ course.duration_days|add:5 }}" required>
+          <div class="form-text text-muted">Maximum {{ course.duration_days|add:5 }} days (course duration + 5).</div>
+        </div>
+
+        <button type="submit" class="btn w-100">Create Assignment</button>
+      </form>
+    </div>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.form-page {
-    min-height: 85vh;
-}
-.form-card {
-    max-width: 700px;
-    width: 100%;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    transition: all 0.4s ease;
-}
-.form-container input,
-.form-container select,
-.form-container textarea {
-    width: 100%;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.25);
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-.form-container input:hover,
-.form-container select:hover,
-.form-container textarea:hover {
-    border-color: var(--bs-primary);
-}
-.form-container input:focus,
-.form-container select:focus,
-.form-container textarea:focus {
-    border-color: var(--bs-primary);
-    outline: none;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-}
-.form-container textarea {
-    min-height: 120px;
-    resize: none;
-}
-.submit-btn {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    padding: 0.75rem;
-    transition: all 0.3s ease;
-}
-.submit-btn:hover {
-    background: linear-gradient(135deg, #0069d9, #004c97);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-@media (max-width: 576px) {
-    .form-card {
-        padding: 1.5rem;
-        margin: 0 1rem;
-    }
-}
-</style>
 {% endblock %}

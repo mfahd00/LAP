@@ -1,32 +1,30 @@
-{% extends 'base.html' %}
-{% block title %}Student Login{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Student Login | LAP{% endblock %}
 
 {% block content %}
-<div class="fullpage-center">
-  <div class="card shadow-sm p-4" style="max-width: 400px; width: 100%;">
-    <h3 class="card-title text-center mb-4">Student Login</h3>
+<div class="auth-shell">
+  <div class="auth-card auth-card-sm">
+    <div class="text-center mb-4">
+      <h2 class="section-heading">Student Login</h2>
+      <p class="auth-subtitle">Access your courses and assignments.</p>
+    </div>
 
-    {% if error %}
-      <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-    <form method="POST" action="{% url 'login_student' %}">
-    {% csrf_token %}
-    <div class="mb-3">
-        <label for="username" class="form-label">Username</label>
+    <form method="post" action="{% url 'login_student' %}">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="username">Username</label>
         <input type="text" name="username" id="username" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label for="password" class="form-label">Password</label>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="password">Password</label>
         <input type="password" name="password" id="password" class="form-control" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
+      </div>
+      <button type="submit" class="btn w-100">Login</button>
+    </form>
 
-
-    <p class="mt-3 text-center">
-      Don't have an account? <a href="{% url 'register' %}">Register</a>
-    </p>
+    <p class="text-center mt-3 mb-0">Need an account? <a href="{% url 'register' %}">Register</a></p>
   </div>
 </div>
 {% endblock %}

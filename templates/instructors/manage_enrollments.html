@@ -1,128 +1,105 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Manage Enrollments | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-4 d-flex justify-content-center">
-  <div class="overlay-box w-100" style="max-width: 1100px;">
-    <div class="p-4">
+<div class="container py-3">
 
-      <h3 class="fw-bold mb-4 text-center section-heading">
-        Student Enrollments
-      </h3>
+  <!-- HEADER + ACTIONS -->
+  <div class="page-title-row d-flex justify-content-between align-items-center mb-2">
 
-      <!-- 🔎 AJAX Search + Filters -->
-      <form id="enrollment-filter-form" method="GET" class="mb-4">
-        <div class="row g-3 align-items-end">
+    <div>
+      <h3 class="section-heading mb-1">Student Enrollments</h3>
+      <p class="section-subheading mb-0">
+        Review and manage pending and approved course enrollments.
+      </p>
+    </div>
 
-          <div class="col-md-4">
-            <input type="text"
-                   name="search"
-                   value="{{ request.GET.search }}"
-                   class="form-control"
-                   placeholder="Search by name or email">
-          </div>
+    <div class="d-flex gap-2">
+      <button form="enrollment-filter-form" class="btn btn-primary px-4">
+        Apply
+      </button>
 
-          <div class="col-md-3">
-            <select name="course" class="form-select">
-              <option value="">All Courses</option>
-              {% for course in instructor_courses %}
-              <option value="{{ course.id }}"
-                {% if selected_course == course.id|stringformat:'s' %}selected{% endif %}>
-                {{ course.title }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
+      <a href="{% url 'manage_enrollments' %}" class="btn btn-secondary px-4">
+        Reset
+      </a>
+    </div>
 
-          <div class="col-md-3">
-            <select name="sort" class="form-select">
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="name">Name</option>
-              <option value="email">Email</option>
-              <option value="course">Course</option>
-            </select>
-          </div>
+  </div>
 
-          <div class="col-md-2 d-grid">
-            <button class="btn btn-info fw-semibold">Apply</button>
-          </div>
+  <!-- COMPACT FILTER PANEL -->
+  <div class="content-panel mb-3 py-3 px-3">
+    <form id="enrollment-filter-form" method="get" class="row g-2">
 
-        </div>
-      </form>
-
-      <!-- 📦 AJAX TABLE CONTAINER -->
-      <div id="enrollment-container">
-        {% include "instructors/enrollment_table.html" %}
+      <!-- SEARCH -->
+      <div class="col-md-3">
+        <input 
+          type="text" 
+          name="search" 
+          value="{{ request.GET.search }}" 
+          class="form-control"
+          placeholder="Search name or email"
+        >
       </div>
 
+      <!-- COURSE -->
+      <div class="col-md-2">
+        <select name="course" class="form-select">
+          <option value="">All Courses</option>
+          {% for course in instructor_courses %}
+            <option value="{{ course.id }}"
+              {% if selected_course == course.id|stringformat:'s' %}selected{% endif %}>
+              {{ course.title }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- DEPARTMENT -->
+      <div class="col-md-2">
+        <select name="department" class="form-select">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+            <option value="{{ dept.id }}"
+              {% if request.GET.department == dept.id|stringformat:'s' %}selected{% endif %}>
+              {{ dept.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- YEAR -->
+      <div class="col-md-2">
+        <select name="year" class="form-select">
+          <option value="">All Years</option>
+          <option value="1" {% if request.GET.year == "1" %}selected{% endif %}>Year 1</option>
+          <option value="2" {% if request.GET.year == "2" %}selected{% endif %}>Year 2</option>
+          <option value="3" {% if request.GET.year == "3" %}selected{% endif %}>Year 3</option>
+          <option value="4" {% if request.GET.year == "4" %}selected{% endif %}>Year 4</option>
+        </select>
+      </div>
+
+      <!-- SORT -->
+      <div class="col-md-3">
+        <select name="sort" class="form-select">
+          <option value="newest" {% if request.GET.sort == "newest" %}selected{% endif %}>Newest</option>
+          <option value="oldest" {% if request.GET.sort == "oldest" %}selected{% endif %}>Oldest</option>
+          <option value="name" {% if request.GET.sort == "name" %}selected{% endif %}>Name</option>
+          <option value="email" {% if request.GET.sort == "email" %}selected{% endif %}>Email</option>
+          <option value="course" {% if request.GET.sort == "course" %}selected{% endif %}>Course</option>
+        </select>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="content-panel">
+    <div class="table-shell">
+      <div id="enrollment-container" class="fade-wrapper">
+        {% include "instructors/enrollment_table.html" %}
+      </div>
     </div>
   </div>
+
 </div>
-
-<style>
-.table-gradient {
-  background: linear-gradient(135deg, #1a4a8c 0%, #2a7df5 100%);
-}
-.overlay-box {
-  background: var(--bs-body-bg);
-  border-radius: 1rem;
-  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
-}
-.table tbody tr:hover {
-  background-color: rgba(0,0,0,0.05);
-  transition: 0.2s;
-}
-.fade-wrapper {
-  transition: opacity 0.25s ease;
-}
-</style>
-
-<!-- 🚀 AJAX SCRIPT -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-  const form = document.getElementById("enrollment-filter-form");
-  const container = document.getElementById("enrollment-container");
-
-  let timeout = null;
-
-  function fetchData() {
-    const params = new URLSearchParams(new FormData(form));
-
-    container.style.opacity = "0.4";
-
-    fetch("?" + params.toString(), {
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    })
-    .then(res => res.text())
-    .then(html => {
-      container.innerHTML = html;
-      container.style.opacity = "1";
-    });
-  }
-
-  form.addEventListener("input", function () {
-    clearTimeout(timeout);
-    timeout = setTimeout(fetchData, 300);
-  });
-
-  form.addEventListener("submit", function(e) {
-    e.preventDefault();
-    fetchData();
-  });
-
-  container.addEventListener("click", function(e) {
-    if (e.target.classList.contains("ajax-action")) {
-      const url = e.target.dataset.url;
-
-      fetch(url, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      }).then(() => fetchData());
-    }
-  });
-
-});
-</script>
-
 {% endblock %}

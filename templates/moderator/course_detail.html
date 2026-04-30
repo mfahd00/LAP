@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Course Review | LAP{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- HEADER -->
+  <div class="content-panel mb-4">
+    <h2 class="section-heading">{{ course.title }}</h2>
+    <p class="section-subheading">{{ course.description }}</p>
+
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      <span class="badge badge-cat">{{ course.category.name }}</span>
+      <span class="badge badge-cat">{{ course.duration_days }} days</span>
+    </div>
+
+    <div class="mt-3">
+      <strong>Instructor:</strong> {{ course.created_by.username }}
+    </div>
+
+    {% if avg_rating %}
+      <div class="mt-2">
+        <span class="status-pill pending">⭐ {{ avg_rating|floatformat:1 }}</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- LESSONS -->
+  <div class="content-panel mb-4">
+    <h4>Lessons ({{ lessons|length }})</h4>
+
+    {% if lessons %}
+      <ul class="list-group list-group-flush">
+        {% for lesson in lessons %}
+          <li class="list-group-item">
+            <strong>{{ lesson.title }}</strong>
+            <div class="small text-muted">{{ lesson.content|truncatewords:20 }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="inline-empty">No lessons</div>
+    {% endif %}
+  </div>
+
+  <!-- ASSIGNMENTS -->
+  <div class="content-panel mb-4">
+    <h4>Assignments ({{ assignments|length }})</h4>
+
+    {% if assignments %}
+      <ul class="list-group list-group-flush">
+        {% for a in assignments %}
+          <li class="list-group-item">
+            <strong>{{ a.title }}</strong>
+            <div class="small text-muted">
+              Due in {{ a.relative_due_days }} days
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="inline-empty">No assignments</div>
+    {% endif %}
+  </div>
+
+  <!-- ANNOUNCEMENTS -->
+  <div class="content-panel mb-4">
+    <h4>Announcements ({{ announcements|length }})</h4>
+
+    {% if announcements %}
+      <ul class="list-group list-group-flush">
+        {% for ann in announcements %}
+          <li class="list-group-item">
+            <strong>{{ ann.title }}</strong>
+            <div class="small text-muted">{{ ann.message }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="inline-empty">No announcements</div>
+    {% endif %}
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="content-panel">
+    <h4>Student Feedback</h4>
+
+    {% if feedbacks %}
+      {% for fb in feedbacks %}
+        <div class="mb-2 p-2 border rounded">
+          <strong>{{ fb.student.username }}</strong>
+          <span class="status-pill pending">⭐ {{ fb.rating }}</span>
+          <div class="small text-muted">{{ fb.comment }}</div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="inline-empty">No feedback yet.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

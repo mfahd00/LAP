@@ -1,38 +1,36 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Create Lesson | LAP{% endblock %}
 
 {% block content %}
-<div class="container py-5 d-flex justify-content-center">
-  <div class="form-container shadow p-4 rounded-4" style="max-width: 700px; width: 100%;">
-    <h2 class="fw-bold text-center mb-4 text-primary">
-      Create Lesson for {{ course.title }}
-    </h2>
-
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-
-      <div class="mb-3">
-        <label for="id_title" class="form-label fw-semibold">Title</label>
-        <input type="text" id="id_title" name="title" class="form-control" required>
+<div class="container py-4">
+  <div class="auth-shell" style="min-height:auto;">
+    <div class="auth-card">
+      <div class="text-center mb-4">
+        <h2 class="section-heading">Create Lesson</h2>
+        <p class="auth-subtitle mb-0">{{ course.title }}</p>
       </div>
 
-      <div class="mb-3">
-        <label for="id_content" class="form-label fw-semibold">Content</label>
-        <textarea id="id_content" name="content" rows="4" class="form-control" required></textarea>
-      </div>
-
-      <div class="mb-3">
-        <label for="id_material" class="form-label fw-semibold">Upload File (optional)</label>
-        <input type="file" id="id_material" name="material" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.jpg,.png,.mp4">
-      </div>
-
-      <div class="mb-3">
-        <label for="id_video_url" class="form-label fw-semibold">Video URL (optional)</label>
-        <input type="url" id="id_video_url" name="video_url" class="form-control" placeholder="https://example.com/video">
-      </div>
-
-      <button type="submit" class="btn w-100 mt-3 fw-semibold py-2">Submit</button>
-    </form>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_title" class="form-label">Title</label>
+          <input type="text" id="id_title" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="id_content" class="form-label">Content</label>
+          <textarea id="id_content" name="content" rows="4" class="form-control" required></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="id_material" class="form-label">Attachment (optional)</label>
+          <input type="file" id="id_material" name="material" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.jpg,.png,.mp4">
+        </div>
+        <div class="mb-3">
+          <label for="id_video_url" class="form-label">Video URL (optional)</label>
+          <input type="url" id="id_video_url" name="video_url" class="form-control" placeholder="https://example.com/video">
+        </div>
+        <button type="submit" class="btn w-100">Create Lesson</button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

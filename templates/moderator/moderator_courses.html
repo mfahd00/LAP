@@ -1,27 +1,50 @@
-{% extends "base.html" %}
+﻿{% extends 'base.html' %}
+{% block title %}All Courses | LAP{% endblock %}
 
 {% block content %}
+<div class="container py-4">
 
-<div class="container py-5">
+  <!-- HEADER -->
+  <div class="page-title-row mb-3">
+    <div>
+      <h3 class="section-heading mb-0">All Courses</h3>
+      <p class="section-subheading mb-0">
+        Moderation view of courses across the platform.
+      </p>
+    </div>
+  </div>
 
-  <!-- 🔍 Filter Box -->
-  <div class="overlay-box p-4 mb-4">
-    <h3 class="section-heading mb-4">📚 All Courses</h3>
+  <!-- KPI STRIP -->
+  <div class="kpi-grid mb-3">
+    <div class="kpi-item">
+      <div class="label">Total Courses</div>
+      <div class="value">{{ total_courses }}</div>
+    </div>
+    <div class="kpi-item">
+      <div class="label">Active Enrollments</div>
+      <div class="value">{{ total_enrollments }}</div>
+    </div>
+    <div class="kpi-item">
+      <div class="label">Avg Students / Course</div>
+      <div class="value">{{ avg_students }}</div>
+    </div>
+  </div>
 
-    <form id="filter-form" class="row g-3 align-items-end">
+  <!-- FILTER PANEL -->
+  <div class="content-panel mb-4">
+    <form id="filter-form" class="row g-3 align-items-center">
 
-      <div class="col-md-4">
-        <label class="small fw-semibold">Search</label>
-        <input type="text"
-               name="search"
-               value="{{ search|default:'' }}"
-               class="form-control"
-               placeholder="Search title or instructor">
+      <!-- SEARCH -->
+      <div class="col-md-5">
+        <input type="text" name="search"
+          value="{{ search|default:'' }}"
+          class="form-control search-bar"
+          placeholder="Search course or instructor...">
       </div>
 
+      <!-- SORT -->
       <div class="col-md-3">
-        <label class="small fw-semibold">Sort By</label>
-        <select name="sort" class="form-select">
+        <select name="sort" class="form-select control-select">
           <option value="most_students" {% if sort == "most_students" %}selected{% endif %}>Most Students</option>
           <option value="least_students" {% if sort == "least_students" %}selected{% endif %}>Least Students</option>
           <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
@@ -29,59 +52,66 @@
         </select>
       </div>
 
-      <div class="col-md-2">
-        <button type="submit" class="btn w-100">Apply</button>
+      <!-- ACTION BUTTONS -->
+      <div class="col-md-4 d-flex justify-content-end gap-2">
+        <button type="button" id="reset-filters" class="btn btn-secondary">
+          Reset
+        </button>
+        <button type="button" id="apply-filters" class="btn">
+          Apply
+        </button>
       </div>
 
     </form>
   </div>
 
-  <!-- 📦 Course Container -->
-  <div class="overlay-box p-4">
-    <div id="course-container">
-        {% include "moderator/course_list.html" %}
+  <!-- COURSE LIST -->
+  <div class="content-panel">
+    <div id="course-container" class="fade-wrapper">
+      {% include "moderator/course_list.html" %}
     </div>
   </div>
 
 </div>
-
 {% endblock %}
 
 
 {% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-    const form = document.getElementById("filter-form");
-    const container = document.getElementById("course-container");
+  const form = document.getElementById('filter-form');
+  const container = document.getElementById('course-container');
 
-    function loadCourses() {
+  const applyBtn = document.getElementById('apply-filters');
+  const resetBtn = document.getElementById('reset-filters');
 
-        const formData = new FormData(form);
-        const params = new URLSearchParams(formData).toString();
+  function loadCourses() {
+    const params = new URLSearchParams(new FormData(form)).toString();
 
-        container.style.opacity = "0.4";
+    container.style.opacity = '0.4';
 
-        fetch(`${window.location.pathname}?${params}`, {
-            headers: {
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            container.innerHTML = data.html;
-            container.style.opacity = "1";
-        })
-        .catch(error => {
-            console.error("AJAX Error:", error);
-            container.style.opacity = "1";
-        });
-    }
-
-    form.addEventListener("submit", function(e) {
-        e.preventDefault();
-        loadCourses();
+    fetch(`${window.location.pathname}?${params}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      container.innerHTML = data.html;
+      container.style.opacity = '1';
+    })
+    .catch(() => {
+      container.style.opacity = '1';
     });
+  }
+
+  /* APPLY */
+  applyBtn.addEventListener('click', loadCourses);
+
+  /* RESET */
+  resetBtn.addEventListener('click', function () {
+    form.reset();
+    loadCourses();
+  });
 
 });
 </script>
