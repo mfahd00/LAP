@@ -41,7 +41,13 @@
           <option value="oldest" {% if request.GET.sort == "oldest" %}selected{% endif %}>Oldest</option>
         </select>
       </div>
-      <div class="col-md-1"><button class="btn w-100">Go</button></div>
+<div class="col-md-1 d-flex flex-column gap-2 align-self-end">
+  <button class="btn w-100">Go</button>
+
+  <a href="{% url 'student_downloads' %}" class="btn btn-secondary w-100">
+    Reset
+  </a>
+</div>
     </form>
   </div>
 

@@ -26,31 +26,51 @@
       <tbody>
         {% for enrollment in student_enrollments %}
           <tr>
-            <td>{{ forloop.counter }}</td>
-            <td class="fw-semibold">{{ enrollment.course.title }}</td>
-            <td>{{ enrollment.enrolled_at|date:"F d, Y" }}</td>
-            <td>
-              {{ enrollment.course_end_date|date:"F d, Y" }}
-              {% if enrollment.is_expired %}<span class="badge bg-danger ms-2">Expired</span>{% endif %}
-            </td>
-            <td>
-              <div class="progress" style="height:18px;">
-                <div class="progress-bar {% if enrollment.progress_percentage < 40 %}bg-danger{% elif enrollment.progress_percentage < 75 %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ enrollment.progress_percentage }}%;">{{ enrollment.progress_percentage }}%</div>
-              </div>
-            </td>
-            <td>
-              {% if enrollment.progress_percentage == 100 %}
-                {% if enrollment.course_result and enrollment.course_result.graded %}
-                  <span class="badge bg-success">{{ enrollment.course_result.total_marks }}/10</span>
-                {% else %}
-                  <a href="{% url 'finalize_course_result' enrollment.id %}" class="btn btn-success btn-sm">Publish Result</a>
-                {% endif %}
-              {% else %}
-                <span class="text-muted small">In Progress</span>
-              {% endif %}
-            </td>
-            <td><a href="{% url 'student_course_detail' enrollment.id %}" class="btn btn-outline-primary btn-sm">View Course</a></td>
-          </tr>
+  <td>{{ forloop.counter }}</td>
+  <td class="fw-semibold">{{ enrollment.course.title }}</td>
+  <td>{{ enrollment.enrolled_at|date:"F d, Y" }}</td>
+
+  <td>
+    {{ enrollment.course_end_date|date:"F d, Y" }}
+
+    {% if enrollment.progress_percentage == 100 %}
+      <span class="badge bg-success ms-2">Completed</span>
+    {% elif enrollment.is_expired %}
+      <span class="badge bg-danger ms-2">Expired</span>
+    {% endif %}
+  </td>
+
+  <td>
+    <div class="progress" style="height:18px;">
+      <div class="progress-bar
+        {% if enrollment.progress_percentage < 40 %}bg-danger
+        {% elif enrollment.progress_percentage < 75 %}bg-warning
+        {% else %}bg-success
+        {% endif %}"
+        style="width: {{ enrollment.progress_percentage }}%;">
+        {{ enrollment.progress_percentage }}%
+      </div>
+    </div>
+  </td>
+
+  <td>
+    {% if enrollment.progress_percentage == 100 %}
+      {% if enrollment.course_result and enrollment.course_result.graded %}
+        <span class="badge bg-success">{{ enrollment.course_result.total_marks }}/10</span>
+      {% else %}
+        <a href="{% url 'finalize_course_result' enrollment.id %}" class="btn btn-success btn-sm">Publish Result</a>
+      {% endif %}
+    {% else %}
+      <span class="text-muted small">In Progress</span>
+    {% endif %}
+  </td>
+
+  <td>
+    <a href="{% url 'student_course_detail' enrollment.id %}" class="btn btn-outline-primary btn-sm">
+      View Course
+    </a>
+  </td>
+</tr>
         {% empty %}
           <tr><td colspan="7" class="text-muted py-4">No enrollments found.</td></tr>
         {% endfor %}

@@ -332,10 +332,10 @@ def enroll_course(request, course_id):
             return render(request, 'students/pending_enrollment.html', {'course': course})
 
     # 🔔 Notify instructor (only on new request)
-    Notification.objects.create(
-        user=course.created_by,
-        message=f"{user.username} requested enrollment for {course.title}",
-        link="/instructor/enrollments/"
+    create_notification_once(
+        course.created_by,
+        f"{user.username} requested enrollment for {course.title}",
+        "/instructor/enrollments/"
     )
 
     # ✅ New request
@@ -426,12 +426,11 @@ def approve_enrollment(request, enrollment_id):
         enrollment.save()
 
         # 🔔 Notification (with type)
-        Notification.objects.create(
-            user=enrollment.student,
-            message=f"You are approved for {enrollment.course.title}",
-            link=f"/courses/{enrollment.course.id}/",
-            type="enrollment"
-        )
+        create_notification_once(
+        enrollment.student,
+        f"You are approved for {enrollment.course.title}",
+        f"/courses/{enrollment.course.id}/"
+    )
 
         messages.success(
             request,
@@ -459,11 +458,10 @@ def remove_enrollment(request, enrollment_id):
     enrollment.delete()
 
     # 🔔 Optional notification (recommended)
-    Notification.objects.create(
-        user=enrollment.student,
-        message=f"You have been removed from {course_title}",
-        link="/courses/",
-        type="enrollment"
+    create_notification_once(
+        enrollment.student,
+        f"You have been removed from {course_title}",
+        "/courses/"
     )
 
     messages.success(
@@ -834,10 +832,10 @@ def assignment_list(request, course_id):
 @login_required
 def submit_assignment(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
-    Notification.objects.create(
-        user=assignment.created_by,
-        message=f"{request.user.username} submitted {assignment.title}",
-        link=f"/assignments/{assignment.id}/submissions/"
+    create_notification_once(
+        assignment.created_by,
+        f"{request.user.username} submitted {assignment.title}",
+        f"/assignments/{assignment.id}/submissions/"
     )    
     enrollment = Enrollment.objects.filter(
         student=request.user,
@@ -1040,10 +1038,10 @@ def create_announcement(request):
             ).exclude(student=request.user)
 
             for enrollment in enrollments:
-                Notification.objects.create(
-                    user=enrollment.student,
-                    message=f"New announcement in {announcement.course.title}: {announcement.title}",
-                    link=f"/courses/{announcement.course.id}/announcements/"
+                create_notification_once(
+                    enrollment.student,
+                    f"New announcement in {announcement.course.title}: {announcement.title}",
+                    f"/courses/{announcement.course.id}/announcements/"
                 )
 
             return redirect("global_announcement_list")
@@ -1266,9 +1264,6 @@ def moderator_stats(request):
     if not request.user.profile.is_moderator:
         return HttpResponseForbidden("Unauthorized")
 
-    # =========================
-    # DATE FILTER
-    # =========================
     try:
         days = int(request.GET.get("days", 30))
     except (TypeError, ValueError):
@@ -1279,9 +1274,7 @@ def moderator_stats(request):
 
     start_date = timezone.now() - timedelta(days=days)
 
-    # =========================
-    # TOTAL COUNTS
-    # =========================
+    # ================= TOTAL COUNTS =================
     total_instructors = Profile.objects.filter(is_instructor=True).count()
 
     approved_instructors = Profile.objects.filter(
@@ -1301,34 +1294,39 @@ def moderator_stats(request):
 
     total_courses = Course.objects.count()
 
-    # =========================
-    # REPORTS OVERVIEW
-    # =========================
+    # ================= REPORTS =================
     total_reports = Report.objects.count()
     pending_reports = Report.objects.filter(status="pending").count()
     resolved_reports = Report.objects.filter(status="resolved").count()
     recent_reports = Report.objects.filter(created_at__gte=start_date).count()
 
-    student_reporters = Report.objects.filter(
+    student_reports_qs = Report.objects.filter(
         reported_by__profile__is_instructor=False,
         reported_by__profile__is_moderator=False
     )
-    instructor_reporters = Report.objects.filter(
+
+    instructor_reports_qs = Report.objects.filter(
         reported_by__profile__is_instructor=True
     )
 
-    student_reports = student_reporters.count()
-    instructor_reports = instructor_reporters.count()
-    recent_student_reports = student_reporters.filter(created_at__gte=start_date).count()
-    recent_instructor_reports = instructor_reporters.filter(created_at__gte=start_date).count()
+    student_reports = student_reports_qs.count()
+    instructor_reports = instructor_reports_qs.count()
+
+    recent_student_reports = student_reports_qs.filter(
+        created_at__gte=start_date
+    ).count()
+
+    recent_instructor_reports = instructor_reports_qs.filter(
+        created_at__gte=start_date
+    ).count()
 
     report_resolution_rate = 0
     if total_reports > 0:
-        report_resolution_rate = round((resolved_reports / total_reports) * 100, 1)
+        report_resolution_rate = round(
+            (resolved_reports / total_reports) * 100, 1
+        )
 
-    # =========================
-    # RECENT GROWTH
-    # =========================
+    # ================= GROWTH =================
     recent_students = User.objects.filter(
         profile__is_instructor=False,
         profile__is_moderator=False,
@@ -1339,41 +1337,43 @@ def moderator_stats(request):
         created_at__gte=start_date
     ).count()
 
-    # =========================
-    # APPROVAL RATE
-    # =========================
+    # ================= APPROVAL =================
     approval_rate = 0
     if total_instructors > 0:
         approval_rate = round(
-            (approved_instructors / total_instructors) * 100,
-            1
+            (approved_instructors / total_instructors) * 100, 1
         )
 
-    # =========================
-    # DEPARTMENT CONTRIBUTION
-    # =========================
-    dept_qs = (
-        Profile.objects
-        .filter(
-            is_instructor=False,
-            is_moderator=False,
-            department__isnull=False
-        )
-        .values("department__name")
-        .annotate(student_count=Count("id"))
-        .order_by("-student_count")
-    )
+    # =========================================================
+    # 🔥 FIXED: USE ENROLLMENT (same as instructor analytics)
+    # =========================================================
+    enrollments = Enrollment.objects.filter(is_approved=True)
 
-    dept_labels = []
-    dept_values = []
+    # ================= DEPARTMENT DATA =================
+    dept_data = enrollments.values(
+        "student__profile__department__name"
+    ).annotate(count=Count("id"))
 
-    for dept in dept_qs:
-        dept_labels.append(dept["department__name"])
-        dept_values.append(dept["student_count"])
+    dept_labels = [
+        d["student__profile__department__name"] or "Unknown"
+        for d in dept_data
+    ]
 
-    # =========================
-    # TOP COURSE CATEGORIES
-    # =========================
+    dept_values = [d["count"] for d in dept_data]
+
+    # ================= YEAR DATA =================
+    year_data = enrollments.values(
+        "student__profile__year"
+    ).annotate(count=Count("id"))
+
+    year_labels = [
+        f"Year {y['student__profile__year']}" if y["student__profile__year"] else "Unknown"
+        for y in year_data
+    ]
+
+    year_values = [y["count"] for y in year_data]
+
+    # ================= TOP CATEGORIES =================
     top_categories_qs = (
         Course.objects
         .filter(category__isnull=False)
@@ -1388,8 +1388,7 @@ def moderator_stats(request):
         percentage = 0
         if total_students > 0:
             percentage = round(
-                (cat["total_enrollments"] / total_students) * 100,
-                1
+                (cat["total_enrollments"] / total_students) * 100, 1
             )
 
         top_categories.append({
@@ -1398,9 +1397,7 @@ def moderator_stats(request):
             "percentage": percentage
         })
 
-    # =========================
-    # TOP 5 COURSES
-    # =========================
+    # ================= TOP COURSES =================
     top_courses_qs = (
         Course.objects
         .annotate(total_enrollments=Count("enrollment"))
@@ -1423,28 +1420,26 @@ def moderator_stats(request):
             "percentage": percentage
         })
 
-    # =========================
-    # CONTEXT
-    # =========================
+    # ================= CONTEXT =================
     context = {
         "days": days,
 
-        # Totals
+        # totals
         "total_instructors": total_instructors,
         "approved_instructors": approved_instructors,
         "pending_instructors": pending_instructors,
         "total_students": total_students,
         "total_courses": total_courses,
 
-        # Growth
+        # growth
         "recent_students": recent_students,
         "recent_courses": recent_courses,
         "recent_reports": recent_reports,
 
-        # Approval
+        # approval
         "approval_rate": approval_rate,
 
-        # Reports
+        # reports
         "total_reports": total_reports,
         "pending_reports": pending_reports,
         "resolved_reports": resolved_reports,
@@ -1454,14 +1449,14 @@ def moderator_stats(request):
         "recent_instructor_reports": recent_instructor_reports,
         "report_resolution_rate": report_resolution_rate,
 
-        # Department Pie
+        # charts (FIXED)
         "dept_labels": dept_labels,
         "dept_values": dept_values,
+        "year_labels": year_labels,
+        "year_values": year_values,
 
-        # Category Ranking
+        # rankings
         "top_categories": top_categories,
-
-        # Course Ranking
         "top_courses": top_courses,
     }
 
@@ -1517,11 +1512,6 @@ def approve_submission(request, submission_id):
         id=submission_id,
         assignment__created_by=request.user
     )
-    Notification.objects.create(
-        user=submission.enrollment.student,
-        message=f"Your assignment '{submission.assignment.title}' was graded ({submission.marks}/10)",
-        link="/assignments/"
-    )
 
     due_date = submission.enrollment.get_assignment_due_date(submission.assignment)
     is_late = due_date and submission.submitted_at > due_date
@@ -1534,6 +1524,13 @@ def approve_submission(request, submission_id):
             submission.marks = marks
             submission.feedback = None
             submission.save()
+
+            # ✅ CREATE NOTIFICATION AFTER SAVE
+            create_notification_once(
+                submission.enrollment.student,
+                f"Your assignment '{submission.assignment.title}' was graded ({submission.marks}/10)",
+                "/assignments/"
+            )
 
             messages.success(request, "Submission approved successfully.")
             return redirect('view_submissions', assignment_id=submission.assignment.id)
@@ -1551,10 +1548,10 @@ def reject_submission(request, submission_id):
         id=submission_id,
         assignment__created_by=request.user
     )
-    Notification.objects.create(
-        user=submission.enrollment.student,
-        message=f"Your assignment '{submission.assignment.title}' was rejected",
-        link="/assignments/"
+    create_notification_once(
+        submission.enrollment.student,
+        f"Your assignment '{submission.assignment.title}' was rejected",
+        "/assignments/"
     )
     if request.method == "POST":
         reason = request.POST.get("reason")
@@ -2148,10 +2145,10 @@ def finalize_course_result(request, enrollment_id):
             enrollment.completed = True
             enrollment.save()
 
-            Notification.objects.create(
-                user=enrollment.student,
-                message=f"Your final result for {enrollment.course.title} has been published.",
-                link="/courses/my-courses/"
+            create_notification_once(
+                enrollment.student,
+                f"Your final result for {enrollment.course.title} has been published.",
+                "/courses/my-courses/"
             )
 
         return redirect("student_detail", enrollment_id=enrollment.id)
@@ -2173,6 +2170,11 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from datetime import date
 
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from datetime import date
+
 @login_required
 def download_certificate(request, enrollment_id):
 
@@ -2187,29 +2189,66 @@ def download_certificate(request, enrollment_id):
     response['Content-Disposition'] = f'attachment; filename="certificate_{enrollment.course.title}.pdf"'
 
     p = canvas.Canvas(response, pagesize=letter)
-
     width, height = letter
 
-    p.setFont("Helvetica-Bold", 28)
-    p.drawCentredString(width/2, height-150, "Certificate of Completion")
+    # ===== OUTER BORDER =====
+    p.setStrokeColor(colors.darkblue)
+    p.setLineWidth(6)
+    p.rect(30, 30, width-60, height-60)
 
+    # ===== INNER BORDER =====
+    p.setStrokeColor(colors.lightgrey)
+    p.setLineWidth(2)
+    p.rect(50, 50, width-100, height-100)
+
+    # ===== TITLE =====
+    p.setFont("Helvetica-Bold", 30)
+    p.drawCentredString(width/2, height-140, "CERTIFICATE OF COMPLETION")
+
+    # ===== SUBTITLE =====
     p.setFont("Helvetica", 16)
-    p.drawCentredString(width/2, height-220, "This is to certify that")
+    p.drawCentredString(width/2, height-190, "This certifies that")
 
+    # ===== NAME =====
+    student_name = enrollment.student.get_full_name() or enrollment.student.username
+    p.setFont("Helvetica-Bold", 26)
+    p.drawCentredString(width/2, height-230, student_name)
+
+    # ===== TEXT =====
+    p.setFont("Helvetica", 16)
+    p.drawCentredString(width/2, height-280, "has successfully completed the course")
+
+    # ===== COURSE NAME =====
     p.setFont("Helvetica-Bold", 22)
-    p.drawCentredString(width/2, height-260, enrollment.student.get_full_name() or enrollment.student.username)
+    p.drawCentredString(width/2, height-320, f"\"{enrollment.course.title}\"")
 
-    p.setFont("Helvetica", 16)
-    p.drawCentredString(width/2, height-310, "has successfully completed the course")
-
-    p.setFont("Helvetica-Bold", 20)
-    p.drawCentredString(width/2, height-350, enrollment.course.title)
-
+    # ===== SCORE =====
     p.setFont("Helvetica", 14)
-    p.drawCentredString(width/2, height-400, f"Final Score: {enrollment.course_result.total_marks}/100")
+    p.drawCentredString(
+        width/2,
+        height-370,
+        f"Final Score: {enrollment.course_result.total_marks}/100"
+    )
 
+    # ===== DATE =====
     p.setFont("Helvetica", 12)
-    p.drawCentredString(width/2, height-450, f"Issued on {date.today()}")
+    p.drawCentredString(width/2, height-410, f"Issued on {date.today()}")
+
+    # ===== SIGNATURES =====
+    p.line(120, 120, 260, 120)
+    p.line(width-260, 120, width-120, 120)
+
+    p.setFont("Helvetica", 10)
+    p.drawCentredString(190, 105, "Instructor")
+    p.drawCentredString(width-190, 105, "Authorized Signature")
+
+    # ===== BADGE =====
+    p.setFillColor(colors.darkblue)
+    p.circle(width-100, height-100, 30, fill=1)
+
+    p.setFillColor(colors.white)
+    p.setFont("Helvetica-Bold", 10)
+    p.drawCentredString(width-100, height-103, "LAP")
 
     p.showPage()
     p.save()
@@ -2737,3 +2776,18 @@ def delete_reported_course(request, course_id):
 
     messages.success(request, "Course deleted.")
     return redirect("moderator_reports")
+
+def create_notification_once(user, message, link=None):
+    exists = Notification.objects.filter(
+        user=user,
+        message=message,
+        link=link,
+        is_read=False
+    ).exists()
+
+    if not exists:
+        Notification.objects.create(
+            user=user,
+            message=message,
+            link=link
+        )
